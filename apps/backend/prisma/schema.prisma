@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  firebaseUid     String?  @unique
+  email           String   @unique
+  username        String   @unique
+  profileImage    String?
+  providerType    String
+  winStreak       Int      @default(0)
+  mvpCount        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastLoginAt     DateTime?
+
+  playerStats     PlayerStat?
+  matchPlayers    MatchPlayer[]
+}
+
+model Match {
+  id              String         @id @default(cuid())
+  roomCode        String
+  matchType       Int
+  winningTeam     String?
+  createdAt       DateTime       @default(now())
+  completedAt     DateTime?
+
+  rounds          Round[]
+  players         MatchPlayer[]
+}
+
+model Round {
+  id              String         @id @default(cuid())
+  roundNumber     Int
+  winnerTeam      String?
+  matchId         String
+
+  match           Match          @relation(fields: [matchId], references: [id])
+}
+
+model MatchPlayer {
+  id              String         @id @default(cuid())
+  userId          String
+  matchId         String
+  team            String
+  roundsWon       Int            @default(0)
+
+  user            User           @relation(fields: [userId], references: [id])
+  match           Match          @relation(fields: [matchId], references: [id])
+}
+
+model PlayerStat {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  totalMatches    Int            @default(0)
+  totalWins       Int            @default(0)
+  totalLosses     Int            @default(0)
+
+  user            User           @relation(fields: [userId], references: [id])
+}
+
+model ReconnectSession {
+  id              String         @id @default(cuid())
+  userId          String
+  roomCode        String
+  reconnectData   Json
+  expiresAt       DateTime
+}
+
+model Emoji {
+  id              String         @id @default(cuid())
+  name            String
+  assetUrl        String
+  enabled         Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+}

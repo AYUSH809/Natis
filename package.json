@@ -1,0 +1,19 @@
+{
+    "name": "natis",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev:backend": "npm run dev --workspace apps/backend",
+        "dev:frontend": "flutter run -d windows",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "format": "prettier --write ."
+    },
+    "devDependencies": {
+        "turbo": "^2.0.0",
+        "prettier": "^3.2.5"
+    }
+}

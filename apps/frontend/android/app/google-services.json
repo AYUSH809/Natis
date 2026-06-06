@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "301551833434",
+    "project_id": "natis-8c09a",
+    "storage_bucket": "natis-8c09a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:301551833434:android:38715bacea3602d9142363",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "301551833434-tal0pcio8smha2qjlt0b0lvv4hjio1cs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaTKpgOdLQox7XYXWNaoiMXCXQ-MPiCCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "301551833434-dt9uebkv51334n88l350f6g8ugche4bh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "301551833434-n3m5uubhhcb9ea8bbrakrt7ugfqb1dpv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.frontend"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
