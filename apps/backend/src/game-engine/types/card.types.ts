@@ -21,7 +21,12 @@ export type Rank =
 
 export interface Card {
     id: string;
+
     suit: Suit;
-    rank: Rank | "JOKER";
-    isJoker: boolean;
+
+    rank: string;
+
+    value: number;
+
+    isJoker?: boolean;
 }

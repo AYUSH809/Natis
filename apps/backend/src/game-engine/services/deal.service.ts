@@ -1,35 +1,29 @@
 import { Card } from "../types/card.types";
+import { PlayerHand } from "../types/game.types";
 
 export class DealService {
-    static dealInitialCards(
-        deck: Card[],
-        players: string[]
-    ) {
-        const hands: Record<
-            string,
-            Card[]
-        > = {};
-
-        players.forEach((player) => {
-            hands[player] = [];
-        });
-
-        let index = 0;
+    static initialDeal(
+        players: PlayerHand[],
+        deck: Card[]
+    ): {
+        players: PlayerHand[];
+        remainingDeck: Card[];
+    } {
+        const workingDeck = [...deck];
 
         for (let round = 0; round < 5; round++) {
             for (const player of players) {
-                hands[player].push(
-                    deck[index]
-                );
+                const card = workingDeck.shift();
 
-                index++;
+                if (card) {
+                    player.cards.push(card as unknown as any);
+                }
             }
         }
 
         return {
-            hands,
-            remainingDeck:
-                deck.slice(index),
+            players,
+            remainingDeck: workingDeck,
         };
     }
 }

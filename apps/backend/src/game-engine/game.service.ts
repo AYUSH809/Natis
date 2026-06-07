@@ -7,11 +7,11 @@ import {
     PlayerHand,
 } from "./types/game.types";
 
-import { DeckService } from "./deck.service";
+import { DeckService } from "./services/deck.service";
 
-import { ShuffleService } from "./shuffle.service";
+import { ShuffleService } from "./services/shuffle.service";
 
-import { DealService } from "./deal.service";
+import { DealService } from "./services/deal.service";
 
 export class GameService {
     static async startMatch(
@@ -39,7 +39,7 @@ export class GameService {
 
         // BUILD DECK
         let deck =
-            DeckService.buildDeck(
+            DeckService.generateDeck(
                 room.maxPlayers
             );
 
@@ -51,7 +51,7 @@ export class GameService {
 
         // CREATE PLAYER HANDS
         const players: PlayerHand[] =
-            room.players.map((player) => ({
+            room.players.map((player: { userId: any; username: any; team: any; }) => ({
                 userId: player.userId,
 
                 username:

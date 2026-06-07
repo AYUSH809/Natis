@@ -1,25 +1,22 @@
-import redisClient from "./redis.client";
-
-import { GameState } from "../game-engine/types/game.types";
+import { redis } from "./redis.client";
 
 export class GameStateService {
     static async saveGameState(
         roomCode: string,
-        state: GameState
+        gameState: any
     ) {
-        await redisClient.set(
+        await redis.set(
             `game:${roomCode}`,
-            JSON.stringify(state)
+            JSON.stringify(gameState)
         );
     }
 
     static async getGameState(
         roomCode: string
-    ): Promise<GameState | null> {
-        const data =
-            await redisClient.get(
-                `game:${roomCode}`
-            );
+    ) {
+        const data = await redis.get(
+            `game:${roomCode}`
+        );
 
         if (!data) return null;
 
@@ -29,7 +26,7 @@ export class GameStateService {
     static async deleteGameState(
         roomCode: string
     ) {
-        await redisClient.del(
+        await redis.del(
             `game:${roomCode}`
         );
     }

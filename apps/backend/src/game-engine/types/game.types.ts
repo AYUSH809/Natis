@@ -8,6 +8,8 @@ export type Suit =
 export type Team = "A" | "B";
 
 export interface Card {
+    id: string;
+
     suit: Suit;
 
     rank: string;

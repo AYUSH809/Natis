@@ -11,6 +11,27 @@ export class DeckService {
         return this.generate6PlayerDeck();
     }
 
+    private static getCardValue(
+        rank: string
+    ): number {
+        switch (rank) {
+            case "A":
+                return 14;
+
+            case "K":
+                return 13;
+
+            case "Q":
+                return 12;
+
+            case "J":
+                return 11;
+
+            default:
+                return Number(rank);
+        }
+    }
+
     private static generate4PlayerDeck(): Card[] {
         const deck: Card[] = [];
 
@@ -45,6 +66,10 @@ export class DeckService {
                     id: `${suit}_${rank}`,
                     suit,
                     rank,
+                    value:
+                        this.getCardValue(
+                            rank
+                        ),
                     isJoker: false,
                 });
             }
@@ -54,6 +79,7 @@ export class DeckService {
             id: "JOKER",
             suit: "JOKER",
             rank: "JOKER",
+            value: 99,
             isJoker: true,
         });
 
@@ -98,6 +124,10 @@ export class DeckService {
                     id: `${suit}_${rank}`,
                     suit,
                     rank,
+                    value:
+                        this.getCardValue(
+                            rank
+                        ),
                     isJoker: false,
                 });
             }
@@ -107,6 +137,7 @@ export class DeckService {
             id: "JOKER",
             suit: "JOKER",
             rank: "JOKER",
+            value: 99,
             isJoker: true,
         });
 
