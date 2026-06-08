@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/card_widget.dart';
+import '../widgets/card_back_widget.dart';
+
 class GameScreen extends StatelessWidget {
   final Map<String, dynamic> gameState;
 
@@ -7,48 +10,95 @@ class GameScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final players = gameState['players'] as List<dynamic>?;
+    final hands = gameState['hands'] as Map<String, dynamic>;
+
+    final currentPlayerId = gameState['currentPlayerId'];
+
+    final myCards = List<Map<String, dynamic>>.from(
+      hands[currentPlayerId] ?? [],
+    );
 
     return Scaffold(
+      backgroundColor: Colors.green[800],
+
       appBar: AppBar(title: const Text('Natis')),
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
 
-        child: players == null
-            ? Center(
-                child: Text(gameState['message'] ?? 'Game failed to start'),
-              )
-            : Column(
-                children: [
-                  const SizedBox(height: 20),
+          const Text('Player 2', style: TextStyle(color: Colors.white)),
 
-                  const Text(
-                    'MATCH STARTED',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CardBackWidget(),
+              CardBackWidget(),
+              CardBackWidget(),
+              CardBackWidget(),
+              CardBackWidget(),
+            ],
+          ),
+
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text('Player 4', style: TextStyle(color: Colors.white)),
+                      CardBackWidget(),
+                    ],
                   ),
+                ),
 
-                  const SizedBox(height: 20),
-
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: players.length,
-
-                      itemBuilder: (_, index) {
-                        final player = players[index];
-
-                        return Card(
-                          child: ListTile(
-                            title: Text(player['username']),
-
-                            subtitle: Text('Cards: ${player['cards'].length}'),
-                          ),
-                        );
-                      },
-                    ),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text(
+                        'TABLE',
+                        style: TextStyle(color: Colors.white, fontSize: 22),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Text('Player 3', style: TextStyle(color: Colors.white)),
+                      CardBackWidget(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(color: Colors.white),
+
+          const Text(
+            'YOUR HAND',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+
+          const SizedBox(height: 10),
+
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: myCards.length,
+              itemBuilder: (_, index) => CardWidget(card: myCards[index]),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

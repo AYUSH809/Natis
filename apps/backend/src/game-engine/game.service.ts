@@ -13,6 +13,8 @@ import { ShuffleService } from "./services/shuffle.service";
 
 import { DealService } from "./services/deal.service";
 
+import { io } from "../socket/socket.server";
+
 export class GameService {
     static async startMatch(
         roomCode: string
@@ -78,10 +80,10 @@ export class GameService {
                 room.maxPlayers,
 
             players:
-                dealResult.updatedPlayers,
+                dealResult.players,
 
             deck:
-                dealResult.remainingDeck,
+                dealResult.remainingDeck as any,
 
             currentDealerIndex: 0,
 
@@ -107,6 +109,11 @@ export class GameService {
 
         await GameStateService.saveGameState(
             roomCode,
+            gameState
+        );
+
+        io.to(roomCode).emit(
+            "match_started",
             gameState
         );
 

@@ -65,6 +65,18 @@ class _RoomWaitingScreenState extends ConsumerState<RoomWaitingScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(error['message'] ?? 'Room Error')));
     });
+
+    socketService.onMatchStarted((gameState) {
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              GameScreen(gameState: Map<String, dynamic>.from(gameState)),
+        ),
+      );
+    });
   }
 
   @override
@@ -146,12 +158,7 @@ class _RoomWaitingScreenState extends ConsumerState<RoomWaitingScreen> {
                           return;
                         }
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GameScreen(gameState: gameState),
-                          ),
-                        );
+                        await gameService.startMatch(room['roomCode']);
                       } catch (error) {
                         if (!context.mounted) {
                           return;

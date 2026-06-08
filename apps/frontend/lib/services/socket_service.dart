@@ -35,4 +35,12 @@ class SocketService {
   void onRoomError(Function(dynamic) callback) {
     socket.on('room_error', callback);
   }
+
+  void onMatchStarted(Function(dynamic) callback) {
+    socket.on('match_started', callback);
+  }
+
+  void dispose() {
+    socket.dispose();
+  }
 }
