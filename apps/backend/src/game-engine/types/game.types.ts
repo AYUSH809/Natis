@@ -99,4 +99,25 @@ export interface GameState {
     matchEnded: boolean;
 
     createdAt: number;
+
+    currentBid?: number;
+
+    highestBid?: number;
+
+    highestBidderId?: string;
+
+    passedPlayers: string[];
+
+    phase:
+    | "BIDDING"
+    | "TRICK_SELECTION"
+    | "PLAYING"
+    | "SCORING";
+
+    currentBidderId?: string;
+
+    bidHistory: {
+        playerId: string;
+        bid: number | "PASS";
+    }[];
 }

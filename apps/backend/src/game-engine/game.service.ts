@@ -7,6 +7,8 @@ import {
     PlayerHand,
 } from "./types/game.types";
 
+import { RoomPlayer } from "../types/room.types";
+
 import { DeckService } from "./services/deck.service";
 
 import { ShuffleService } from "./services/shuffle.service";
@@ -53,11 +55,10 @@ export class GameService {
 
         // CREATE PLAYER HANDS
         const players: PlayerHand[] =
-            room.players.map((player: { userId: any; username: any; team: any; }) => ({
+            room.players.map((player: RoomPlayer) => ({
                 userId: player.userId,
 
-                username:
-                    player.username,
+                username: player.username,
 
                 team: player.team,
 
@@ -105,6 +106,21 @@ export class GameService {
             matchEnded: false,
 
             createdAt: Date.now(),
+
+            phase: "BIDDING",
+
+            currentBid: 0,
+
+            highestBid: 0,
+
+            highestBidderId: undefined,
+
+            passedPlayers: [],
+
+            currentBidderId:
+                room.players[0].userId,
+
+            bidHistory: [],
         };
 
         await GameStateService.saveGameState(
@@ -112,10 +128,42 @@ export class GameService {
             gameState
         );
 
-        io.to(roomCode).emit(
-            "match_started",
-            gameState
-        );
+        for (const player of room.players) {
+            if (!player.socketId) continue;
+
+            io.to(player.socketId).emit(
+                "match_started",
+                {
+                    roomCode,
+
+                    playerId:
+                        player.userId,
+
+                    myHand:
+                        gameState.players.find(
+                            (p) => p.userId === player.userId
+                        )?.cards ?? [],
+
+                    players:
+                        room.players.map(
+                            (p: RoomPlayer) => ({
+                                userId:
+                                    p.userId,
+                                username:
+                                    p.username,
+                                team:
+                                    p.team,
+                            })
+                        ),
+
+                    maxPlayers:
+                        room.maxPlayers,
+
+                    phase:
+                        "BIDDING",
+                }
+            );
+        }
 
         return gameState;
     }

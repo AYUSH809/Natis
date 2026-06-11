@@ -40,6 +40,10 @@ class SocketService {
     socket.on('match_started', callback);
   }
 
+  void onBidUpdated(Function(dynamic) callback) {
+    socket.on('bid_updated', callback);
+  }
+
   void dispose() {
     socket.dispose();
   }
