@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/socket_provider.dart';
 
+import '../services/bid_service.dart';
+
 import '../widgets/card_widget.dart';
 import '../widgets/card_back_widget.dart';
 
@@ -17,6 +19,8 @@ class GameScreen extends ConsumerStatefulWidget {
 
 class _GameScreenState extends ConsumerState<GameScreen> {
   late Map<String, dynamic> gameState;
+
+  final BidService bidService = BidService();
 
   @override
   void initState() {
@@ -43,11 +47,33 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     });
   }
 
+  Future<void> submitBid(int bid) async {
+    try {
+      await bidService.placeBid(
+        roomCode: gameState['roomCode'],
+        playerId: gameState['playerId'],
+        bid: bid,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final myCards = List<Map<String, dynamic>>.from(gameState['myHand'] ?? []);
 
     final players = List<Map<String, dynamic>>.from(gameState['players'] ?? []);
+
+    final myPlayerId = gameState['playerId'];
+
+    final currentBidderId = gameState['currentBidderId'];
+
+    final isMyTurn = myPlayerId == currentBidderId;
 
     return Scaffold(
       backgroundColor: Colors.green[800],
@@ -119,10 +145,35 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       const SizedBox(height: 10),
 
                       Text(
+                        'Current Bidder: ${gameState['currentBidderId'] ?? '-'}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      Text(
+                        'Me: $myPlayerId',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+
+                      Text(
                         'Highest Bid: ${gameState['highestBid'] ?? 0}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      Text(
+                        isMyTurn ? 'YOUR TURN' : 'WAITING...',
+                        style: TextStyle(
+                          color: isMyTurn ? Colors.yellow : Colors.white,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -135,32 +186,32 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         alignment: WrapAlignment.center,
                         children: [
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(0) : null,
                             child: const Text('Pass'),
                           ),
 
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(5) : null,
                             child: const Text('5'),
                           ),
 
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(6) : null,
                             child: const Text('6'),
                           ),
 
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(7) : null,
                             child: const Text('7'),
                           ),
 
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(8) : null,
                             child: const Text('8'),
                           ),
 
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: isMyTurn ? () => submitBid(9) : null,
                             child: const Text('All Hand'),
                           ),
                         ],

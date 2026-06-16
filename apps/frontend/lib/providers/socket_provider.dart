@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../providers/socket_provider.dart';
+//import '../../../providers/socket_provider.dart';
 
 import '../services/socket_service.dart';
 
-final socketProvider =
-    Provider<SocketService>((ref) {
+final socketProvider = Provider<SocketService>((ref) {
   final socketService = SocketService();
 
   socketService.connect();

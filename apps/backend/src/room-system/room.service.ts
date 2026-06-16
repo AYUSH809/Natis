@@ -58,40 +58,55 @@ export class RoomService {
             );
 
         if (!room) {
-            throw new Error("Room not found");
+            throw new Error(
+                "Room not found"
+            );
         }
 
-        if (
-            room.players.length >=
-            room.maxPlayers
-        ) {
-            throw new Error("Room full");
-        }
-
-        // CHECK IF PLAYER ALREADY EXISTS
         const existingPlayer =
             room.players.find(
-                (p) =>
-                    p.userId === player.userId
+                (p: any) =>
+                    p.userId ===
+                    player.userId
             );
 
-        // ONLY ADD IF NOT ALREADY PRESENT
-        if (!existingPlayer) {
-            const team =
-                room.players.length % 2 === 0
-                    ? "A"
-                    : "B";
-
-            room.players.push({
-                ...player,
-                team,
-            });
+        // EXISTING PLAYER
+        if (existingPlayer) {
+            existingPlayer.socketId =
+                player.socketId;
 
             await RoomStateService.saveRoomState(
                 roomCode,
                 room
             );
+
+            return room;
         }
+
+        // NEW PLAYER
+        if (
+            room.players.length >=
+            room.maxPlayers
+        ) {
+            throw new Error(
+                "Room full"
+            );
+        }
+
+        const team =
+            room.players.length % 2 === 0
+                ? "A"
+                : "B";
+
+        room.players.push({
+            ...player,
+            team,
+        });
+
+        await RoomStateService.saveRoomState(
+            roomCode,
+            room
+        );
 
         return room;
     }

@@ -8,7 +8,7 @@ class BidService {
     required String playerId,
     required int bid,
   }) async {
-    await http.post(
+    final response = await http.post(
       Uri.parse('http://localhost:3000/game/bid'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -17,5 +17,9 @@ class BidService {
         'bid': bid,
       }),
     );
+
+    if (response.statusCode >= 400) {
+      throw Exception(response.body);
+    }
   }
 }

@@ -1,14 +1,14 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import http from "http";
+import http from "node:http";
 
 import { prisma } from "./database/prisma";
 import { redis } from "./redis/redis.client";
 
 import authRoutes from "./routes/auth.routes";
 import roomRoutes from "./routes/room.routes";
-import gameRoutes from "./routes/game.routes";
+import gameRoutes from "./game-engine/game.routes";
 
 import { initializeSocket } from "./socket/socket.server";
 

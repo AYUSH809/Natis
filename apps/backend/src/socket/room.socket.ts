@@ -21,6 +21,12 @@ export function registerRoomSockets(
 
         socket.join(roomCode);
 
+        console.log(
+          socket.id,
+          "joined room",
+          roomCode
+        );
+
         io.to(roomCode).emit(
           "room_updated",
           room

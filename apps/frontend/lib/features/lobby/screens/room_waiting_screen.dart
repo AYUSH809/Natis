@@ -37,18 +37,10 @@ class _RoomWaitingScreenState extends ConsumerState<RoomWaitingScreen> {
 
     final socketService = ref.read(socketProvider);
 
-    final players = (room['players'] as List<dynamic>?) ?? [];
-
-    final alreadyExists = players.any(
-      (player) => player['userId'] == widget.userId,
+    socketService.joinRoom(
+      roomCode: room['roomCode'],
+      player: {'userId': widget.userId, 'username': widget.username},
     );
-
-    if (!alreadyExists) {
-      socketService.joinRoom(
-        roomCode: room['roomCode'],
-        player: {'userId': widget.userId, 'username': widget.username},
-      );
-    }
 
     socketService.onRoomUpdated((updatedRoom) {
       if (!mounted) return;
@@ -150,9 +142,9 @@ class _RoomWaitingScreenState extends ConsumerState<RoomWaitingScreen> {
 
                         final gameService = GameService();
 
-                        final gameState = await gameService.startMatch(
-                          room['roomCode'],
-                        );
+                        // final gameState = await gameService.startMatch(
+                        //   room['roomCode'],
+                        // );
 
                         if (!context.mounted) {
                           return;

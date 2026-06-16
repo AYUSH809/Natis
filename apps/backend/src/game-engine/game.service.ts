@@ -128,7 +128,18 @@ export class GameService {
             gameState
         );
 
+        console.log(
+            "ROOM PLAYERS:",
+            room.players
+        );
+
         for (const player of room.players) {
+            console.log(
+                "EMITTING TO:",
+                player.username,
+                player.socketId
+            );
+
             if (!player.socketId) continue;
 
             io.to(player.socketId).emit(
@@ -161,6 +172,15 @@ export class GameService {
 
                     phase:
                         "BIDDING",
+
+                    highestBid: 0,
+
+                    highestBidderId: null,
+
+                    currentBidderId:
+                        room.players[0].userId,
+
+                    bidHistory: [],
                 }
             );
         }
