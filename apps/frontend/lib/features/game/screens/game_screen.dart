@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/socket_provider.dart';
 
 import '../services/bid_service.dart';
+import '../services/pass_service.dart';
 
 import '../widgets/card_widget.dart';
 import '../widgets/card_back_widget.dart';
@@ -21,6 +22,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late Map<String, dynamic> gameState;
 
   final BidService bidService = BidService();
+  final PassService passService = PassService();
 
   @override
   void initState() {
@@ -53,6 +55,21 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         roomCode: gameState['roomCode'],
         playerId: gameState['playerId'],
         bid: bid,
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> submitPass() async {
+    try {
+      await passService.passBid(
+        roomCode: gameState['roomCode'],
+        playerId: gameState['playerId'],
       );
     } catch (error) {
       if (!mounted) return;
