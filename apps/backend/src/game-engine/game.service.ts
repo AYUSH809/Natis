@@ -96,6 +96,8 @@ export class GameService {
 
             rounds: [],
 
+            tableCards: [],
+
             score: {
                 teamA: 0,
                 teamB: 0,
@@ -121,6 +123,7 @@ export class GameService {
                 room.players[0].userId,
 
             bidHistory: [],
+
         };
 
         await GameStateService.saveGameState(
@@ -171,16 +174,28 @@ export class GameService {
                         room.maxPlayers,
 
                     phase:
-                        "BIDDING",
+                        gameState.phase,
 
-                    highestBid: 0,
+                    highestBid:
+                        gameState.highestBid,
 
-                    highestBidderId: null,
+                    highestBidderId:
+                        gameState.highestBidderId,
 
                     currentBidderId:
-                        room.players[0].userId,
+                        gameState.currentBidderId,
 
-                    bidHistory: [],
+                    winningBidderId:
+                        gameState.winningBidderId,
+
+                    winningBid:
+                        gameState.winningBid,
+
+                    trumpSuit:
+                        gameState.trumpSuit,
+
+                    bidHistory:
+                        gameState.bidHistory,
                 }
             );
         }

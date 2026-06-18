@@ -6,6 +6,10 @@ import { BidController } from "./bid.controller";
 
 import { PassController } from "./pass.controller";
 
+import { TrickController } from "./trick.controller";
+
+import { PlayController } from "./play.controller";
+
 const router = Router();
 
 router.post(
@@ -21,6 +25,16 @@ router.post(
 router.post(
     "/pass",
     PassController.passBid
+);
+
+router.post(
+    "/select-suit",
+    TrickController.selectSuit
+);
+
+router.post(
+    "/play-card",
+    PlayController.playCard
 );
 
 export default router;

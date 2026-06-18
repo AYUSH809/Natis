@@ -110,18 +110,31 @@ export interface GameState {
 
     winningBid?: number;
 
+    trumpSuit?: string;
+
     passedPlayers: string[];
 
     phase:
     | "BIDDING"
     | "TRICK_SELECTION"
+    | "CARD_DISTRIBUTION"
     | "PLAYING"
     | "SCORING";
 
     currentBidderId?: string;
 
+    currentPlayerTurn?: string;
+
+    tableCards: {
+        playerId: string;
+        card: Card;
+    }[];
+
+    selectedSuit?: string;
+
     bidHistory: {
         playerId: string;
         bid: number | "PASS";
     }[];
+
 }

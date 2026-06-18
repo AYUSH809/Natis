@@ -5,6 +5,7 @@ import '../../../providers/socket_provider.dart';
 
 import '../services/bid_service.dart';
 import '../services/pass_service.dart';
+import '../services/play_service.dart';
 
 import '../widgets/card_widget.dart';
 import '../widgets/card_back_widget.dart';
@@ -23,6 +24,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   final BidService bidService = BidService();
   final PassService passService = PassService();
+  final PlayService playService = PlayService();
 
   @override
   void initState() {
@@ -44,6 +46,38 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           gameState['currentBidderId'] = data['currentBidderId'];
 
           gameState['bidHistory'] = data['bidHistory'];
+
+          gameState['phase'] = data['phase'];
+
+          gameState['winningBidderId'] = data['winningBidderId'];
+
+          gameState['winningBid'] = data['winningBid'];
+        });
+      });
+
+      socketService.onSuitSelected((data) {
+        if (!mounted) return;
+
+        setState(() {
+          gameState['trumpSuit'] = data['suit'];
+
+          gameState['phase'] = data['phase'];
+        });
+      });
+
+      socketService.onCardPlayed((data) {
+        if (!mounted) return;
+
+        setState(() {
+          gameState['tableCards'] = data['tableCards'];
+
+          if (data['playerId'] == gameState['playerId']) {
+            final cards = List<Map<String, dynamic>>.from(gameState['myHand']);
+
+            cards.removeWhere((card) => card['id'] == data['card']['id']);
+
+            gameState['myHand'] = cards;
+          }
         });
       });
     });
@@ -70,6 +104,24 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       await passService.passBid(
         roomCode: gameState['roomCode'],
         playerId: gameState['playerId'],
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> playCard(String cardId) async {
+    try {
+      await playService.playCard(
+        roomCode: gameState['roomCode'],
+
+        playerId: gameState['playerId'],
+
+        cardId: cardId,
       );
     } catch (error) {
       if (!mounted) return;
@@ -151,6 +203,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
                       const SizedBox(height: 20),
 
+                      if (gameState['tableCards'] != null)
+                        Wrap(
+                          spacing: 10,
+                          children:
+                              List<Map<String, dynamic>>.from(
+                                gameState['tableCards'],
+                              ).map((entry) {
+                                return CardWidget(card: entry['card']);
+                              }).toList(),
+                        ),
+
                       Text(
                         gameState['phase']?.toString() ?? 'BIDDING',
                         style: const TextStyle(
@@ -186,6 +249,25 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ),
                       ),
 
+                      if (gameState['phase'] == 'TRICK_SELECTION')
+                        Text(
+                          'Winner: ${gameState['winningBidderId']}',
+                          style: const TextStyle(
+                            color: Colors.yellow,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                      if (gameState['phase'] == 'TRICK_SELECTION')
+                        Text(
+                          'Winning Bid: ${gameState['winningBid']}',
+                          style: const TextStyle(
+                            color: Colors.yellow,
+                            fontSize: 18,
+                          ),
+                        ),
+
                       Text(
                         isMyTurn ? 'YOUR TURN' : 'WAITING...',
                         style: TextStyle(
@@ -203,7 +285,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         alignment: WrapAlignment.center,
                         children: [
                           ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(0) : null,
+                            onPressed: isMyTurn ? submitPass : null,
                             child: const Text('Pass'),
                           ),
 
@@ -271,7 +353,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: myCards.length,
-              itemBuilder: (_, index) => CardWidget(card: myCards[index]),
+              itemBuilder: (_, index) {
+                return GestureDetector(
+                  onTap: () {
+                    playCard(myCards[index]['id']);
+                  },
+                  child: CardWidget(card: myCards[index]),
+                );
+              },
             ),
           ),
 

@@ -44,6 +44,14 @@ class SocketService {
     socket.on('bid_updated', callback);
   }
 
+  void onCardPlayed(Function(dynamic) callback) {
+    socket.on('card_played', callback);
+  }
+
+  void onSuitSelected(Function(dynamic) callback) {
+    socket.on('suit_selected', callback);
+  }
+
   void dispose() {
     socket.dispose();
   }
