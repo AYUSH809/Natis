@@ -1,5 +1,6 @@
 import { GameState } from "../types/game.types";
 import { moveToNextBidder } from "../utils/bidding.utils";
+import { isBiddingComplete } from "../utils/bid-completion.utils";
 
 export class BiddingEngine {
     static placeBid(
@@ -43,6 +44,21 @@ export class BiddingEngine {
             gameState
         );
 
+        if (
+            isBiddingComplete(
+                gameState
+            )
+        ) {
+            gameState.phase =
+                "TRICK_SELECTION";
+
+            gameState.winningBidderId =
+                gameState.highestBidderId;
+
+            gameState.winningBid =
+                gameState.highestBid;
+        }
+
         return gameState;
     }
 
@@ -77,6 +93,21 @@ export class BiddingEngine {
         moveToNextBidder(
             gameState
         );
+
+        if (
+            isBiddingComplete(
+                gameState
+            )
+        ) {
+            gameState.phase =
+                "TRICK_SELECTION";
+
+            gameState.winningBidderId =
+                gameState.highestBidderId;
+
+            gameState.winningBid =
+                gameState.highestBid;
+        }
 
         return gameState;
     }

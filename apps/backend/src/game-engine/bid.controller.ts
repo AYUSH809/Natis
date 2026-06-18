@@ -54,6 +54,15 @@ export class BidController {
 
                     bidHistory:
                         gameState.bidHistory,
+
+                    phase:
+                        gameState.phase,
+
+                    winningBidderId:
+                        gameState.winningBidderId,
+
+                    winningBid:
+                        gameState.winningBid,
                 }
             );
 

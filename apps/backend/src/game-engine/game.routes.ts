@@ -4,7 +4,7 @@ import { GameController } from "./game.controller";
 
 import { BidController } from "./bid.controller";
 
-import { PassController } from "./controllers/pass.controller";
+import { PassController } from "./pass.controller";
 
 const router = Router();
 

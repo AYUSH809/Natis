@@ -106,6 +106,10 @@ export interface GameState {
 
     highestBidderId?: string;
 
+    winningBidderId?: string;
+
+    winningBid?: number;
+
     passedPlayers: string[];
 
     phase:
