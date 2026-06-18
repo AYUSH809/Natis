@@ -79,6 +79,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             gameState['myHand'] = cards;
           }
         });
+
+        gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
       });
     });
   }
