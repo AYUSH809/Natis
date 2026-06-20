@@ -73,6 +73,38 @@ export class TrickController {
             gameState.deck =
                 [];
 
+            if (
+                gameState.allHand &&
+                gameState.allHandPlayerId
+            ) {
+                const allHandPlayer =
+                    gameState.players.find(
+                        (player: any) =>
+                            player.userId ===
+                            gameState.allHandPlayerId
+                    );
+
+                if (allHandPlayer) {
+                    const teammate =
+                        gameState.players.find(
+                            (player: any) =>
+                                player.team ===
+                                allHandPlayer.team &&
+                                player.userId !==
+                                allHandPlayer.userId
+                        );
+
+                    if (teammate) {
+                        teammate.disabled =
+                            true;
+
+                        gameState.disabledPlayerIds.push(
+                            teammate.userId
+                        );
+                    }
+                }
+            }
+
             gameState.phase =
                 "PLAYING";
 

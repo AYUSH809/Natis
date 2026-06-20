@@ -274,7 +274,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     final players = List<Map<String, dynamic>>.from(gameState['players'] ?? []);
 
+    final disabledPlayers = List<String>.from(
+      gameState['disabledPlayerIds'] ?? [],
+    );
+
     final myPlayerId = gameState['playerId'];
+
+    final isDisabled = disabledPlayers.contains(myPlayerId);
 
     final currentBidderId = gameState['currentBidderId'];
 
@@ -422,6 +428,20 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             ),
                           ),
 
+                          if (isDisabled)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 10),
+                              child: Text(
+                                'ALL HAND ACTIVE\nYou are disabled.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+
                           const SizedBox(height: 20),
 
                           Wrap(
@@ -430,32 +450,44 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                             alignment: WrapAlignment.center,
                             children: [
                               ElevatedButton(
-                                onPressed: isMyTurn ? submitPass : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? submitPass
+                                    : null,
                                 child: const Text('Pass'),
                               ),
 
                               ElevatedButton(
-                                onPressed: isMyTurn ? () => submitBid(5) : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? () => submitBid(5)
+                                    : null,
                                 child: const Text('5'),
                               ),
 
                               ElevatedButton(
-                                onPressed: isMyTurn ? () => submitBid(6) : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? () => submitBid(6)
+                                    : null,
                                 child: const Text('6'),
                               ),
 
                               ElevatedButton(
-                                onPressed: isMyTurn ? () => submitBid(7) : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? () => submitBid(7)
+                                    : null,
                                 child: const Text('7'),
                               ),
 
                               ElevatedButton(
-                                onPressed: isMyTurn ? () => submitBid(8) : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? () => submitBid(8)
+                                    : null,
                                 child: const Text('8'),
                               ),
 
                               ElevatedButton(
-                                onPressed: isMyTurn ? () => submitBid(9) : null,
+                                onPressed: isMyTurn && !isDisabled
+                                    ? () => submitBid(9)
+                                    : null,
                                 child: const Text('All Hand'),
                               ),
                             ],

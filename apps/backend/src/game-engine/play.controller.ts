@@ -29,6 +29,14 @@ export class PlayController {
 
       const player = gameState.players.find((p: any) => p.userId === playerId);
 
+      if (
+        player?.disabled
+      ) {
+        throw new Error(
+          "Disabled player cannot play"
+        );
+      }
+
       if (!player) {
         throw new Error("Player not found");
       }
@@ -84,9 +92,30 @@ export class PlayController {
         (p: any) => p.userId === playerId,
       );
 
-      const nextIndex = (currentIndex + 1) % gameState.players.length;
+      let nextPlayer;
 
-      gameState.currentPlayerTurn = gameState.players[nextIndex].userId;
+      for (
+        let offset = 1;
+        offset <= gameState.players.length;
+        offset++
+      ) {
+        const nextIndex =
+          (currentIndex + offset) %
+          gameState.players.length;
+
+        const candidate =
+          gameState.players[nextIndex];
+
+        if (
+          !candidate.disabled
+        ) {
+          nextPlayer =
+            candidate;
+
+          break;
+        }
+      }
+      gameState.currentPlayerTurn = nextPlayer?.userId;
 
       let trickWinnerId: string | undefined;
 

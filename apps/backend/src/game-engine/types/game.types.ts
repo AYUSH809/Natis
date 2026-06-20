@@ -32,6 +32,7 @@ export interface BidState {
     passedPlayers: string[];
     trickSuit?: Suit;
     allHand?: boolean;
+    allHandPlayerId?: string;
 }
 
 export interface PlayedCard {
@@ -87,6 +88,7 @@ export interface GameState {
     teamBTricks: number;
     biddingTeam?: Team;
     allHand: boolean;
+    allHandPlayerId?: string;
     disabledPlayerIds: string[];
     bidHistory: {
         playerId: string;

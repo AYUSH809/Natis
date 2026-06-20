@@ -17,17 +17,26 @@ export class TrickWinnerEngine {
             );
         }
 
+        const leadSuitCard =
+            cards.find(
+                (entry) =>
+                    entry.card.suit !==
+                    "JOKER"
+            );
+
         const leadSuit =
-            cards[0].card.suit;
+            leadSuitCard?.card.suit;
         const noTrumpMode =
             trumpSuit === "JOKER";
 
         let winningCards =
-            cards.filter(
-                (entry) =>
-                    entry.card.suit ===
-                    leadSuit
-            );
+            leadSuit
+                ? cards.filter(
+                    (entry) =>
+                        entry.card.suit ===
+                        leadSuit
+                )
+                : cards;
 
         if (!noTrumpMode) {
             const jokerCard =
@@ -44,10 +53,10 @@ export class TrickWinnerEngine {
             const trumpCards =
                 trumpSuit
                     ? cards.filter(
-                          (entry) =>
-                              entry.card.suit ===
-                              trumpSuit
-                      )
+                        (entry) =>
+                            entry.card.suit ===
+                            trumpSuit
+                    )
                     : [];
 
             if (trumpCards.length > 0) {
@@ -60,7 +69,7 @@ export class TrickWinnerEngine {
             winningCards.reduce(
                 (best, entry) =>
                     entry.card.value >
-                    best.card.value
+                        best.card.value
                         ? entry
                         : best
             );

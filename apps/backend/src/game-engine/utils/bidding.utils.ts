@@ -108,4 +108,18 @@ export function finalizeBidding(
         winningPlayer.team;
     gameState.allHand =
         gameState.highestBid === 9;
+
+    if (
+        gameState.allHand
+    ) {
+        gameState.allHandPlayerId =
+            gameState.highestBidderId;
+    }
+
+    if (
+        gameState.allHand
+    ) {
+        gameState.allHandPlayerId =
+            gameState.highestBidderId;
+    }
 }
