@@ -59,9 +59,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         if (!mounted) return;
 
         setState(() {
-          gameState['trumpSuit'] = data['suit'];
+          gameState['trumpSuit'] = data['trumpSuit'];
 
           gameState['phase'] = data['phase'];
+
+          gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
         });
       });
 

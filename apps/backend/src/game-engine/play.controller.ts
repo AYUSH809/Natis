@@ -4,6 +4,8 @@ import { GameStateService } from "../redis/game-state.service";
 
 import { io } from "../socket/socket.server";
 
+import { TrickWinnerEngine } from "./engines/trick-winner.engine";
+
 export class PlayController {
     static async playCard(
         req: Request,
@@ -58,17 +60,64 @@ export class PlayController {
                 );
             }
 
+            // CURRENT ROUND
+            let currentRound =
+                gameState.rounds[
+                gameState.rounds.length - 1
+                ];
+
+            // FOLLOW SUIT VALIDATION
+            if (
+                currentRound && currentRound.baseSuit
+            ) {
+                const hasBaseSuit =
+                    player.cards.some(
+                        card =>
+                            card.suit ===
+                            currentRound.baseSuit
+                    );
+
+                const selectedCard =
+                    player.cards.find(
+                        card =>
+                            card.id === cardId
+                    );
+
+                if (
+                    hasBaseSuit &&
+                    selectedCard?.suit !==
+                    currentRound.baseSuit
+                ) {
+                    throw new Error(
+                        "Must follow suit"
+                    );
+                }
+            }
+
             const playedCard =
                 player.cards.splice(
                     cardIndex,
                     1
                 )[0];
 
+            if (
+                !currentRound.baseSuit
+            ) {
+                currentRound.baseSuit =
+                    playedCard.suit;
+            }
+
             gameState.tableCards.push({
                 playerId,
                 card: playedCard,
             });
 
+            currentRound.playedCards.push({
+                userId: playerId,
+                card: playedCard,
+            });
+
+            // NEXT PLAYER TURN
             const currentIndex =
                 gameState.players.findIndex(
                     p =>
@@ -84,6 +133,46 @@ export class PlayController {
                 gameState.players[
                     nextIndex
                 ].userId;
+
+            let trickWinnerId:
+                | string
+                | undefined;
+
+            // TRICK COMPLETE
+            if (
+                gameState.tableCards.length ===
+                gameState.maxPlayers
+            ) {
+                trickWinnerId =
+                    TrickWinnerEngine.determineWinner(
+                        gameState.tableCards,
+                        gameState.trumpSuit
+                    );
+
+                currentRound.winnerId =
+                    trickWinnerId;
+
+                const winningPlayer =
+                    gameState.players.find(
+                        p =>
+                            p.userId ===
+                            trickWinnerId
+                    );
+
+                if (
+                    winningPlayer
+                ) {
+                    winningPlayer.roundsWon++;
+                }
+
+                gameState.currentPlayerTurn =
+                    trickWinnerId;
+
+                gameState.tableCards =
+                    [];
+
+                gameState.currentRound++;
+            }
 
             await GameStateService.saveGameState(
                 roomCode,
@@ -102,6 +191,8 @@ export class PlayController {
 
                     currentPlayerTurn:
                         gameState.currentPlayerTurn,
+
+                    trickWinnerId,
                 }
             );
 

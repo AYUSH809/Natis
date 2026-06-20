@@ -47,6 +47,19 @@ export class TrickController {
             gameState.currentPlayerTurn =
                 gameState.winningBidderId;
 
+            gameState.rounds.push({
+                roundNumber: 1,
+
+                currentTurn:
+                    gameState.winningBidderId!,
+
+                baseSuit: undefined,
+
+                playedCards: [],
+
+                winnerId: undefined,
+            });
+
             const dealResult =
                 FinalDealService
                     .distributeRemainingCards(
@@ -72,8 +85,15 @@ export class TrickController {
                 "suit_selected",
                 {
                     suit,
+
+                    trumpSuit:
+                        gameState.trumpSuit,
+
                     phase:
                         gameState.phase,
+
+                    currentPlayerTurn:
+                        gameState.currentPlayerTurn,
                 }
             );
 
