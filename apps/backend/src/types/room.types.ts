@@ -1,8 +1,10 @@
+import { Team } from "../game-engine/types/game.types";
+
 export interface RoomPlayer {
     userId: string;
     username: string;
     socketId: string;
-    team?: string;
+    team?: Team;
 }
 
 export interface RoomState {

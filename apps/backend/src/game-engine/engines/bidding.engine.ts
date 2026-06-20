@@ -1,5 +1,15 @@
-import { GameState } from "../types/game.types";
-import { moveToNextBidder } from "../utils/bidding.utils";
+import {
+    GameState,
+    BidValue,
+} from "../types/game.types";
+
+import {
+    finalizeBidding,
+    getActiveBidders,
+    isValidBidValue,
+    moveToNextBidder,
+} from "../utils/bidding.utils";
+
 import { isBiddingComplete } from "../utils/bid-completion.utils";
 
 export class BiddingEngine {
@@ -8,12 +18,34 @@ export class BiddingEngine {
         playerId: string,
         bid: number
     ) {
+        if (gameState.phase !== "BIDDING") {
+            throw new Error(
+                "Bidding is closed"
+            );
+        }
+
         if (
             gameState.currentBidderId !==
             playerId
         ) {
             throw new Error(
                 "Not your turn"
+            );
+        }
+
+        if (
+            gameState.passedPlayers.includes(
+                playerId
+            )
+        ) {
+            throw new Error(
+                "Passed players cannot bid again"
+            );
+        }
+
+        if (!isValidBidValue(bid)) {
+            throw new Error(
+                "Invalid bid value"
             );
         }
 
@@ -26,18 +58,18 @@ export class BiddingEngine {
             );
         }
 
+        const normalizedBid =
+            bid as BidValue;
+
         gameState.highestBid =
-            bid;
-
+            normalizedBid;
         gameState.currentBid =
-            bid;
-
+            normalizedBid;
         gameState.highestBidderId =
             playerId;
-
         gameState.bidHistory.push({
             playerId,
-            bid,
+            bid: normalizedBid,
         });
 
         moveToNextBidder(
@@ -49,14 +81,9 @@ export class BiddingEngine {
                 gameState
             )
         ) {
-            gameState.phase =
-                "TRICK_SELECTION";
-
-            gameState.winningBidderId =
-                gameState.highestBidderId;
-
-            gameState.winningBid =
-                gameState.highestBid;
+            finalizeBidding(
+                gameState
+            );
         }
 
         return gameState;
@@ -66,6 +93,12 @@ export class BiddingEngine {
         gameState: GameState,
         playerId: string
     ) {
+        if (gameState.phase !== "BIDDING") {
+            throw new Error(
+                "Bidding is closed"
+            );
+        }
+
         if (
             gameState.currentBidderId !==
             playerId
@@ -76,15 +109,30 @@ export class BiddingEngine {
         }
 
         if (
-            !gameState.passedPlayers.includes(
+            gameState.passedPlayers.includes(
                 playerId
             )
         ) {
-            gameState.passedPlayers.push(
-                playerId
+            throw new Error(
+                "Player already passed"
             );
         }
 
+        const activePlayers =
+            getActiveBidders(gameState);
+
+        if (
+            !gameState.highestBidderId &&
+            activePlayers.length <= 2
+        ) {
+            throw new Error(
+                "At least one bid is required before the final pass"
+            );
+        }
+
+        gameState.passedPlayers.push(
+            playerId
+        );
         gameState.bidHistory.push({
             playerId,
             bid: "PASS",
@@ -99,14 +147,9 @@ export class BiddingEngine {
                 gameState
             )
         ) {
-            gameState.phase =
-                "TRICK_SELECTION";
-
-            gameState.winningBidderId =
-                gameState.highestBidderId;
-
-            gameState.winningBid =
-                gameState.highestBid;
+            finalizeBidding(
+                gameState
+            );
         }
 
         return gameState;

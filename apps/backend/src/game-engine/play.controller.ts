@@ -6,206 +6,174 @@ import { io } from "../socket/socket.server";
 
 import { TrickWinnerEngine } from "./engines/trick-winner.engine";
 
+import { ScoringEngine } from "./engines/scoring.engine";
+
 export class PlayController {
-    static async playCard(
-        req: Request,
-        res: Response
-    ) {
-        try {
-            const {
-                roomCode,
-                playerId,
-                cardId,
-            } = req.body;
+  static async playCard(req: Request, res: Response) {
+    try {
+      const { roomCode, playerId, cardId } = req.body;
 
-            const gameState =
-                await GameStateService.getGameState(
-                    roomCode
-                );
+      const gameState = await GameStateService.getGameState(roomCode);
 
-            if (!gameState) {
-                throw new Error(
-                    "Game not found"
-                );
-            }
+      if (!gameState) {
+        throw new Error("Game not found");
+      }
 
-            if (
-                gameState.currentPlayerTurn !==
-                playerId
-            ) {
-                throw new Error(
-                    "Not your turn"
-                );
-            }
+      if (gameState.matchEnded) {
+        throw new Error("Match already ended");
+      }
 
-            const player =
-                gameState.players.find(
-                    p => p.userId === playerId
-                );
+      if (gameState.currentPlayerTurn !== playerId) {
+        throw new Error("Not your turn");
+      }
 
-            if (!player) {
-                throw new Error(
-                    "Player not found"
-                );
-            }
+      const player = gameState.players.find((p: any) => p.userId === playerId);
 
-            const cardIndex =
-                player.cards.findIndex(
-                    card => card.id === cardId
-                );
+      if (!player) {
+        throw new Error("Player not found");
+      }
 
-            if (cardIndex === -1) {
-                throw new Error(
-                    "Card not found"
-                );
-            }
+      const cardIndex = player.cards.findIndex(
+        (card: any) => card.id === cardId,
+      );
 
-            // CURRENT ROUND
-            let currentRound =
-                gameState.rounds[
-                gameState.rounds.length - 1
-                ];
+      if (cardIndex === -1) {
+        throw new Error("Card not found");
+      }
 
-            // FOLLOW SUIT VALIDATION
-            if (
-                currentRound && currentRound.baseSuit
-            ) {
-                const hasBaseSuit =
-                    player.cards.some(
-                        card =>
-                            card.suit ===
-                            currentRound.baseSuit
-                    );
+      // CURRENT ROUND
+      let currentRound = gameState.rounds[gameState.rounds.length - 1];
 
-                const selectedCard =
-                    player.cards.find(
-                        card =>
-                            card.id === cardId
-                    );
+      if (!currentRound) {
+        throw new Error("Round not initialized");
+      }
 
-                if (
-                    hasBaseSuit &&
-                    selectedCard?.suit !==
-                    currentRound.baseSuit
-                ) {
-                    throw new Error(
-                        "Must follow suit"
-                    );
-                }
-            }
+      // FOLLOW SUIT VALIDATION
+      if (currentRound && currentRound.baseSuit) {
+        const hasBaseSuit = player.cards.some(
+          (card: any) => card.suit === currentRound.baseSuit,
+        );
 
-            const playedCard =
-                player.cards.splice(
-                    cardIndex,
-                    1
-                )[0];
+        const selectedCard = player.cards.find(
+          (card: any) => card.id === cardId,
+        );
 
-            if (
-                !currentRound.baseSuit
-            ) {
-                currentRound.baseSuit =
-                    playedCard.suit;
-            }
-
-            gameState.tableCards.push({
-                playerId,
-                card: playedCard,
-            });
-
-            currentRound.playedCards.push({
-                userId: playerId,
-                card: playedCard,
-            });
-
-            // NEXT PLAYER TURN
-            const currentIndex =
-                gameState.players.findIndex(
-                    p =>
-                        p.userId ===
-                        playerId
-                );
-
-            const nextIndex =
-                (currentIndex + 1) %
-                gameState.players.length;
-
-            gameState.currentPlayerTurn =
-                gameState.players[
-                    nextIndex
-                ].userId;
-
-            let trickWinnerId:
-                | string
-                | undefined;
-
-            // TRICK COMPLETE
-            if (
-                gameState.tableCards.length ===
-                gameState.maxPlayers
-            ) {
-                trickWinnerId =
-                    TrickWinnerEngine.determineWinner(
-                        gameState.tableCards,
-                        gameState.trumpSuit
-                    );
-
-                currentRound.winnerId =
-                    trickWinnerId;
-
-                const winningPlayer =
-                    gameState.players.find(
-                        p =>
-                            p.userId ===
-                            trickWinnerId
-                    );
-
-                if (
-                    winningPlayer
-                ) {
-                    winningPlayer.roundsWon++;
-                }
-
-                gameState.currentPlayerTurn =
-                    trickWinnerId;
-
-                gameState.tableCards =
-                    [];
-
-                gameState.currentRound++;
-            }
-
-            await GameStateService.saveGameState(
-                roomCode,
-                gameState
-            );
-
-            io.to(roomCode).emit(
-                "card_played",
-                {
-                    playerId,
-
-                    card: playedCard,
-
-                    tableCards:
-                        gameState.tableCards,
-
-                    currentPlayerTurn:
-                        gameState.currentPlayerTurn,
-
-                    trickWinnerId,
-                }
-            );
-
-            return res.json({
-                success: true,
-                card: playedCard,
-            });
-
-        } catch (error: any) {
-            return res.status(400).json({
-                message:
-                    error.message,
-            });
+        if (hasBaseSuit && selectedCard?.suit !== currentRound.baseSuit) {
+          throw new Error("Must follow suit");
         }
+      }
+
+      const playedCard = player.cards.splice(cardIndex, 1)[0];
+
+      if (!currentRound.baseSuit) {
+        currentRound.baseSuit = playedCard.suit;
+      }
+
+      gameState.tableCards.push({
+        playerId,
+        card: playedCard,
+      });
+
+      currentRound.playedCards.push({
+        userId: playerId,
+        card: playedCard,
+      });
+
+      // NEXT PLAYER TURN
+      const currentIndex = gameState.players.findIndex(
+        (p: any) => p.userId === playerId,
+      );
+
+      const nextIndex = (currentIndex + 1) % gameState.players.length;
+
+      gameState.currentPlayerTurn = gameState.players[nextIndex].userId;
+
+      let trickWinnerId: string | undefined;
+
+      // TRICK COMPLETE
+      if (gameState.tableCards.length === gameState.maxPlayers) {
+        trickWinnerId = TrickWinnerEngine.determineWinner(
+          gameState.tableCards,
+          gameState.trumpSuit,
+        );
+
+        currentRound.winnerId = trickWinnerId;
+
+        const winningPlayer = gameState.players.find(
+          (p: any) => p.userId === trickWinnerId,
+        );
+
+        if (winningPlayer) {
+          winningPlayer.roundsWon++;
+
+          if (winningPlayer.team === "A") {
+            gameState.teamATricks++;
+          } else {
+            gameState.teamBTricks++;
+          }
+        }
+
+        gameState.currentPlayerTurn = trickWinnerId;
+
+        gameState.tableCards = [];
+
+        gameState.currentRound++;
+
+        if (gameState.currentRound <= 8) {
+          gameState.rounds.push({
+            roundNumber: gameState.currentRound,
+
+            currentTurn: trickWinnerId,
+
+            baseSuit: undefined,
+
+            playedCards: [],
+
+            winnerId: undefined,
+          });
+        }
+
+        if (!gameState.matchEnded && gameState.currentRound > 8) {
+          gameState.matchEnded = true;
+
+          ScoringEngine.calculateScore(gameState);
+        }
+      }
+
+      await GameStateService.saveGameState(roomCode, gameState);
+
+      io.to(roomCode).emit("card_played", {
+        playerId,
+
+        card: playedCard,
+
+        tableCards: gameState.tableCards,
+
+        currentPlayerTurn: gameState.currentPlayerTurn,
+
+        score: gameState.score,
+
+        teamATricks: gameState.teamATricks,
+
+        teamBTricks: gameState.teamBTricks,
+
+        matchEnded: gameState.matchEnded,
+
+        trickWinnerId,
+
+        currentRound: gameState.currentRound,
+
+        rounds: gameState.rounds,
+      });
+
+      return res.json({
+        success: true,
+        card: playedCard,
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        message: error.message,
+      });
     }
+  }
 }

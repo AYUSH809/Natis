@@ -1,21 +1,18 @@
-import { RoomService } from "../room-system/room.service";
-
 import { GameStateService } from "../redis/game-state.service";
+import { RoomService } from "../room-system/room.service";
+import { RoomPlayer } from "../types/room.types";
+import { io } from "../socket/socket.server";
 
 import {
     GameState,
     PlayerHand,
 } from "./types/game.types";
 
-import { RoomPlayer } from "../types/room.types";
-
-import { DeckService } from "./services/deck.service";
-
-import { ShuffleService } from "./services/shuffle.service";
-
 import { DealService } from "./services/deal.service";
-
-import { io } from "../socket/socket.server";
+import { DeckService } from "./services/deck.service";
+import { GamePayloadService } from "./services/game-payload.service";
+import { ShuffleService } from "./services/shuffle.service";
+import { MAX_PLAYERS } from "./utils/game-rules";
 
 export class GameService {
     static async startMatch(
@@ -32,6 +29,21 @@ export class GameService {
             );
         }
 
+        if (room.matchStarted) {
+            throw new Error(
+                "Match already started"
+            );
+        }
+
+        if (
+            room.maxPlayers !==
+            MAX_PLAYERS
+        ) {
+            throw new Error(
+                "Only 4 player rooms are supported"
+            );
+        }
+
         if (
             room.players.length !==
             room.maxPlayers
@@ -41,33 +53,32 @@ export class GameService {
             );
         }
 
-        // BUILD DECK
         let deck =
             DeckService.generateDeck(
                 room.maxPlayers
             );
 
-        // SHUFFLE
         deck =
             ShuffleService.shuffle(
                 deck
             );
 
-        // CREATE PLAYER HANDS
         const players: PlayerHand[] =
-            room.players.map((player: RoomPlayer) => ({
-                userId: player.userId,
+            room.players.map(
+                (player: RoomPlayer) => ({
+                    userId:
+                        player.userId,
+                    username:
+                        player.username,
+                    team:
+                        player.team!,
+                    cards: [],
+                    roundsWon: 0,
+                    disabled: false,
+                    disconnected: false,
+                })
+            );
 
-                username: player.username,
-
-                team: player.team,
-
-                cards: [],
-
-                roundsWon: 0,
-            }));
-
-        // INITIAL 5 CARD DEAL
         const dealResult =
             DealService.initialDeal(
                 players,
@@ -76,129 +87,77 @@ export class GameService {
 
         const gameState: GameState = {
             roomCode,
-
             maxPlayers:
                 room.maxPlayers,
-
             players:
                 dealResult.players,
-
             deck:
-                dealResult.remainingDeck as any,
-
+                dealResult.remainingDeck,
             currentDealerIndex: 0,
-
             currentBidderIndex: 0,
-
             trickRevealed: false,
-
             currentRound: 1,
-
             rounds: [],
-
             tableCards: [],
-
             score: {
                 teamA: 0,
                 teamB: 0,
             },
-
             matchStarted: true,
-
             matchEnded: false,
-
             createdAt: Date.now(),
-
             phase: "BIDDING",
-
-            currentBid: 0,
-
-            highestBid: 0,
-
-            highestBidderId: undefined,
-
+            currentBid: undefined,
+            highestBid: undefined,
+            highestBidderId:
+                undefined,
+            winningBidderId:
+                undefined,
+            winningBid: undefined,
+            trumpSuit: undefined,
             passedPlayers: [],
-
             currentBidderId:
                 room.players[0].userId,
-
+            currentPlayerTurn:
+                undefined,
+            selectedSuit:
+                undefined,
+            teamATricks: 0,
+            teamBTricks: 0,
+            biddingTeam: undefined,
+            allHand: false,
+            disabledPlayerIds: [],
             bidHistory: [],
-
         };
 
+        room.matchStarted = true;
+
+        await RoomService.saveRoom(
+            room
+        );
         await GameStateService.saveGameState(
             roomCode,
             gameState
         );
 
-        console.log(
-            "ROOM PLAYERS:",
-            room.players
-        );
-
         for (const player of room.players) {
-            console.log(
-                "EMITTING TO:",
-                player.username,
-                player.socketId
-            );
-
-            if (!player.socketId) continue;
+            if (!player.socketId) {
+                continue;
+            }
 
             io.to(player.socketId).emit(
                 "match_started",
-                {
-                    roomCode,
-
-                    playerId:
-                        player.userId,
-
-                    myHand:
-                        gameState.players.find(
-                            (p) => p.userId === player.userId
-                        )?.cards ?? [],
-
-                    players:
-                        room.players.map(
-                            (p: RoomPlayer) => ({
-                                userId:
-                                    p.userId,
-                                username:
-                                    p.username,
-                                team:
-                                    p.team,
-                            })
-                        ),
-
-                    maxPlayers:
-                        room.maxPlayers,
-
-                    phase:
-                        gameState.phase,
-
-                    highestBid:
-                        gameState.highestBid,
-
-                    highestBidderId:
-                        gameState.highestBidderId,
-
-                    currentBidderId:
-                        gameState.currentBidderId,
-
-                    winningBidderId:
-                        gameState.winningBidderId,
-
-                    winningBid:
-                        gameState.winningBid,
-
-                    trumpSuit:
-                        gameState.trumpSuit,
-
-                    bidHistory:
-                        gameState.bidHistory,
-                }
+                GamePayloadService.buildPlayerState(
+                    gameState,
+                    player.userId
+                )
             );
         }
+
+        io.to(roomCode).emit(
+            "room_updated",
+            room
+        );
 
         return gameState;
     }

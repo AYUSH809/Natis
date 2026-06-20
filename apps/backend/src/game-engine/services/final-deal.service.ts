@@ -1,4 +1,5 @@
-import { Card, PlayerHand } from "../types/game.types";
+import { Card } from "../types/card.types";
+import { PlayerHand } from "../types/game.types";
 
 export class FinalDealService {
     static distributeRemainingCards(

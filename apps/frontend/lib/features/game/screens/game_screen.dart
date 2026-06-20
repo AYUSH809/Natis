@@ -31,6 +31,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     super.initState();
 
     gameState = Map<String, dynamic>.from(widget.gameState);
+    gameState['score'] ??= {'teamA': 0, 'teamB': 0};
+    gameState['teamATricks'] ??= 0;
+    gameState['teamBTricks'] ??= 0;
+    gameState['matchEnded'] ??= false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final socketService = ref.read(socketProvider);
@@ -72,6 +76,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
         setState(() {
           gameState['tableCards'] = data['tableCards'];
+          gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
+          gameState['score'] = data['score'] ?? gameState['score'];
+          gameState['teamATricks'] =
+              data['teamATricks'] ?? gameState['teamATricks'];
+          gameState['teamBTricks'] =
+              data['teamBTricks'] ?? gameState['teamBTricks'];
+          gameState['matchEnded'] = data['matchEnded'] ?? false;
+          gameState['currentRound'] = data['currentRound'];
+          gameState['rounds'] = data['rounds'];
+          gameState['trickWinnerId'] = data['trickWinnerId'];
 
           if (data['playerId'] == gameState['playerId']) {
             final cards = List<Map<String, dynamic>>.from(gameState['myHand']);
@@ -81,10 +95,128 @@ class _GameScreenState extends ConsumerState<GameScreen> {
             gameState['myHand'] = cards;
           }
         });
-
-        gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
       });
     });
+  }
+
+  int get teamAScore => (gameState['score']?['teamA'] as num?)?.toInt() ?? 0;
+
+  int get teamBScore => (gameState['score']?['teamB'] as num?)?.toInt() ?? 0;
+
+  int get teamATricks => (gameState['teamATricks'] as num?)?.toInt() ?? 0;
+
+  int get teamBTricks => (gameState['teamBTricks'] as num?)?.toInt() ?? 0;
+
+  String get matchResultText {
+    if (teamAScore > teamBScore) {
+      return 'Team A Wins';
+    }
+
+    if (teamBScore > teamAScore) {
+      return 'Team B Wins';
+    }
+
+    return 'Draw';
+  }
+
+  Widget buildScoreboardCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'SCOREBOARD',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Team A: $teamAScore',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            'Team B: $teamBScore',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Tricks: A = $teamATricks  B = $teamBTricks',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMatchFinishedOverlay() {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black54,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF123524),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'MATCH FINISHED',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Team A Score: $teamAScore',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              Text(
+                'Team B Score: $teamBScore',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                matchResultText,
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> submitBid(int bid) async {
@@ -153,222 +285,235 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
       appBar: AppBar(title: const Text('Natis')),
 
-      body: Column(
+      body: Stack(
         children: [
-          const SizedBox(height: 20),
-
-          Text(
-            'Players (${players.length})',
-            style: const TextStyle(color: Colors.white, fontSize: 18),
-          ),
-
-          const SizedBox(height: 10),
-
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Column(
             children: [
-              CardBackWidget(),
-              CardBackWidget(),
-              CardBackWidget(),
-              CardBackWidget(),
-              CardBackWidget(),
-            ],
-          ),
+              const SizedBox(height: 20),
 
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'Player Left',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      CardBackWidget(),
-                    ],
-                  ),
-                ),
+              Text(
+                'Players (${players.length})',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
 
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'TABLE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              const SizedBox(height: 10),
 
-                      const SizedBox(height: 20),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CardBackWidget(),
+                  CardBackWidget(),
+                  CardBackWidget(),
+                  CardBackWidget(),
+                  CardBackWidget(),
+                ],
+              ),
 
-                      if (gameState['tableCards'] != null)
-                        Wrap(
-                          spacing: 10,
-                          children:
-                              List<Map<String, dynamic>>.from(
-                                gameState['tableCards'],
-                              ).map((entry) {
-                                return CardWidget(card: entry['card']);
-                              }).toList(),
-                        ),
-
-                      Text(
-                        gameState['phase']?.toString() ?? 'BIDDING',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Text(
-                        'Current Bidder: ${gameState['currentBidderId'] ?? '-'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-
-                      Text(
-                        'Me: $myPlayerId',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-
-                      Text(
-                        'Highest Bid: ${gameState['highestBid'] ?? 0}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      if (gameState['phase'] == 'TRICK_SELECTION')
-                        Text(
-                          'Winner: ${gameState['winningBidderId']}',
-                          style: const TextStyle(
-                            color: Colors.yellow,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text(
+                            'Player Left',
+                            style: TextStyle(color: Colors.white),
                           ),
-                        ),
-
-                      if (gameState['phase'] == 'TRICK_SELECTION')
-                        Text(
-                          'Winning Bid: ${gameState['winningBid']}',
-                          style: const TextStyle(
-                            color: Colors.yellow,
-                            fontSize: 18,
-                          ),
-                        ),
-
-                      Text(
-                        isMyTurn ? 'YOUR TURN' : 'WAITING...',
-                        style: TextStyle(
-                          color: isMyTurn ? Colors.yellow : Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                          CardBackWidget(),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 20),
-
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        alignment: WrapAlignment.center,
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ElevatedButton(
-                            onPressed: isMyTurn ? submitPass : null,
-                            child: const Text('Pass'),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: buildScoreboardCard(),
                           ),
 
-                          ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(5) : null,
-                            child: const Text('5'),
+                          const SizedBox(height: 20),
+
+                          const Text(
+                            'TABLE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
 
-                          ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(6) : null,
-                            child: const Text('6'),
+                          const SizedBox(height: 20),
+
+                          if (gameState['tableCards'] != null)
+                            Wrap(
+                              spacing: 10,
+                              children:
+                                  List<Map<String, dynamic>>.from(
+                                    gameState['tableCards'],
+                                  ).map((entry) {
+                                    return CardWidget(card: entry['card']);
+                                  }).toList(),
+                            ),
+
+                          Text(
+                            gameState['phase']?.toString() ?? 'BIDDING',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
                           ),
 
-                          ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(7) : null,
-                            child: const Text('7'),
+                          const SizedBox(height: 10),
+
+                          Text(
+                            'Current Bidder: ${gameState['currentBidderId'] ?? '-'}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
 
-                          ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(8) : null,
-                            child: const Text('8'),
+                          Text(
+                            'Me: $myPlayerId',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
 
-                          ElevatedButton(
-                            onPressed: isMyTurn ? () => submitBid(9) : null,
-                            child: const Text('All Hand'),
+                          Text(
+                            'Highest Bid: ${gameState['highestBid'] ?? 0}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          if (gameState['phase'] == 'TRICK_SELECTION')
+                            Text(
+                              'Winner: ${gameState['winningBidderId']}',
+                              style: const TextStyle(
+                                color: Colors.yellow,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                          if (gameState['phase'] == 'TRICK_SELECTION')
+                            Text(
+                              'Winning Bid: ${gameState['winningBid']}',
+                              style: const TextStyle(
+                                color: Colors.yellow,
+                                fontSize: 18,
+                              ),
+                            ),
+
+                          Text(
+                            isMyTurn ? 'YOUR TURN' : 'WAITING...',
+                            style: TextStyle(
+                              color: isMyTurn ? Colors.yellow : Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              ElevatedButton(
+                                onPressed: isMyTurn ? submitPass : null,
+                                child: const Text('Pass'),
+                              ),
+
+                              ElevatedButton(
+                                onPressed: isMyTurn ? () => submitBid(5) : null,
+                                child: const Text('5'),
+                              ),
+
+                              ElevatedButton(
+                                onPressed: isMyTurn ? () => submitBid(6) : null,
+                                child: const Text('6'),
+                              ),
+
+                              ElevatedButton(
+                                onPressed: isMyTurn ? () => submitBid(7) : null,
+                                child: const Text('7'),
+                              ),
+
+                              ElevatedButton(
+                                onPressed: isMyTurn ? () => submitBid(8) : null,
+                                child: const Text('8'),
+                              ),
+
+                              ElevatedButton(
+                                onPressed: isMyTurn ? () => submitBid(9) : null,
+                                child: const Text('All Hand'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'Player Right',
-                        style: TextStyle(color: Colors.white),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text(
+                            'Player Right',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          CardBackWidget(),
+                        ],
                       ),
-                      CardBackWidget(),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          const Divider(color: Colors.white),
+              const Divider(color: Colors.white),
 
-          const Text(
-            'YOUR HAND',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+              const Text(
+                'YOUR HAND',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
-          const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: myCards.length,
-              itemBuilder: (_, index) {
-                return GestureDetector(
-                  onTap: () {
-                    playCard(myCards[index]['id']);
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: myCards.length,
+                  itemBuilder: (_, index) {
+                    return GestureDetector(
+                      onTap: () {
+                        playCard(myCards[index]['id']);
+                      },
+                      child: CardWidget(card: myCards[index]),
+                    );
                   },
-                  child: CardWidget(card: myCards[index]),
-                );
-              },
-            ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+            ],
           ),
 
-          const SizedBox(height: 20),
+          if (gameState['matchEnded'] == true) buildMatchFinishedOverlay(),
         ],
       ),
     );

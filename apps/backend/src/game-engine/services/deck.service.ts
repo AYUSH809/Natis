@@ -1,14 +1,24 @@
-import { Card } from "../types/card.types";
+import {
+    Card,
+    STANDARD_SUITS,
+} from "../types/card.types";
+
+import {
+    MAX_PLAYERS,
+    TOTAL_TRICKS,
+} from "../utils/game-rules";
 
 export class DeckService {
     static generateDeck(
         maxPlayers: number
     ): Card[] {
-        if (maxPlayers === 4) {
-            return this.generate4PlayerDeck();
+        if (maxPlayers !== MAX_PLAYERS) {
+            throw new Error(
+                "Only 4 player matches are supported"
+            );
         }
 
-        return this.generate6PlayerDeck();
+        return this.generate4PlayerDeck();
     }
 
     private static getCardValue(
@@ -17,31 +27,19 @@ export class DeckService {
         switch (rank) {
             case "A":
                 return 14;
-
             case "K":
                 return 13;
-
             case "Q":
                 return 12;
-
             case "J":
                 return 11;
-
             default:
                 return Number(rank);
         }
     }
 
-    private static generate4PlayerDeck(): Card[] {
+    private static generate4PlayerDeck() {
         const deck: Card[] = [];
-
-        const suits = [
-            "HEARTS",
-            "DIAMONDS",
-            "CLUBS",
-            "SPADES",
-        ] as const;
-
         const ranks = [
             "A",
             "K",
@@ -53,7 +51,7 @@ export class DeckService {
             "7",
         ] as const;
 
-        for (const suit of suits) {
+        for (const suit of STANDARD_SUITS) {
             for (const rank of ranks) {
                 if (
                     suit === "SPADES" &&
@@ -83,63 +81,16 @@ export class DeckService {
             isJoker: true,
         });
 
-        return deck;
-    }
+        const expectedCards =
+            MAX_PLAYERS * TOTAL_TRICKS;
 
-    private static generate6PlayerDeck(): Card[] {
-        const deck: Card[] = [];
-
-        const suits = [
-            "HEARTS",
-            "DIAMONDS",
-            "CLUBS",
-            "SPADES",
-        ] as const;
-
-        const ranks = [
-            "A",
-            "K",
-            "Q",
-            "J",
-            "10",
-            "9",
-            "8",
-            "7",
-            "6",
-            "5",
-            "4",
-            "3",
-        ] as const;
-
-        for (const suit of suits) {
-            for (const rank of ranks) {
-                if (
-                    suit === "SPADES" &&
-                    rank === "3"
-                ) {
-                    continue;
-                }
-
-                deck.push({
-                    id: `${suit}_${rank}`,
-                    suit,
-                    rank,
-                    value:
-                        this.getCardValue(
-                            rank
-                        ),
-                    isJoker: false,
-                });
-            }
+        if (
+            deck.length !== expectedCards
+        ) {
+            throw new Error(
+                "Invalid 4 player deck size"
+            );
         }
-
-        deck.push({
-            id: "JOKER",
-            suit: "JOKER",
-            rank: "JOKER",
-            value: 99,
-            isJoker: true,
-        });
 
         return deck;
     }

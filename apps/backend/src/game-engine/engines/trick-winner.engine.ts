@@ -1,4 +1,7 @@
-import { Card } from "../types/card.types";
+import {
+    Card,
+    Suit,
+} from "../types/card.types";
 
 export class TrickWinnerEngine {
     static determineWinner(
@@ -6,30 +9,61 @@ export class TrickWinnerEngine {
             playerId: string;
             card: Card;
         }[],
-        trumpSuit?: string
+        trumpSuit?: Suit
     ) {
-        let winner =
-            cards[0];
+        if (cards.length === 0) {
+            throw new Error(
+                "Cannot determine a winner without played cards"
+            );
+        }
 
-        for (const entry of cards) {
-            if (
-                entry.card.suit ===
-                trumpSuit &&
-                winner.card.suit !==
-                trumpSuit
-            ) {
-                winner = entry;
+        const leadSuit =
+            cards[0].card.suit;
+        const noTrumpMode =
+            trumpSuit === "JOKER";
+
+        let winningCards =
+            cards.filter(
+                (entry) =>
+                    entry.card.suit ===
+                    leadSuit
+            );
+
+        if (!noTrumpMode) {
+            const jokerCard =
+                cards.find(
+                    (entry) =>
+                        entry.card.suit ===
+                        "JOKER"
+                );
+
+            if (jokerCard) {
+                return jokerCard.playerId;
             }
 
-            if (
-                entry.card.suit ===
-                winner.card.suit &&
-                entry.card.value >
-                winner.card.value
-            ) {
-                winner = entry;
+            const trumpCards =
+                trumpSuit
+                    ? cards.filter(
+                          (entry) =>
+                              entry.card.suit ===
+                              trumpSuit
+                      )
+                    : [];
+
+            if (trumpCards.length > 0) {
+                winningCards =
+                    trumpCards;
             }
         }
+
+        const winner =
+            winningCards.reduce(
+                (best, entry) =>
+                    entry.card.value >
+                    best.card.value
+                        ? entry
+                        : best
+            );
 
         return winner.playerId;
     }

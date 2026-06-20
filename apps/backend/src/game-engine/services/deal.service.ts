@@ -9,14 +9,19 @@ export class DealService {
         players: PlayerHand[];
         remainingDeck: Card[];
     } {
-        const workingDeck = [...deck];
+        const workingDeck = [
+            ...deck,
+        ];
 
         for (let round = 0; round < 5; round++) {
             for (const player of players) {
-                const card = workingDeck.shift();
+                const card =
+                    workingDeck.shift();
 
                 if (card) {
-                    player.cards.push(card as unknown as any);
+                    player.cards.push(
+                        card
+                    );
                 }
             }
         }

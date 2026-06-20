@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 
 import { GameStateService } from "../redis/game-state.service";
+import { io } from "../socket/socket.server";
 
 import { BiddingEngine } from "./engines/bidding.engine";
-
-import { io } from "../socket/socket.server";
 
 export class BidController {
     static async placeBid(
@@ -16,7 +15,19 @@ export class BidController {
                 roomCode,
                 playerId,
                 bid,
-            } = req.body;
+            } = req.body ?? {};
+
+            if (
+                typeof roomCode !==
+                    "string" ||
+                typeof playerId !==
+                    "string" ||
+                typeof bid !== "number"
+            ) {
+                throw new Error(
+                    "Invalid bid payload"
+                );
+            }
 
             const gameState =
                 await GameStateService.getGameState(
@@ -45,32 +56,28 @@ export class BidController {
                 {
                     highestBid:
                         gameState.highestBid,
-
                     highestBidderId:
                         gameState.highestBidderId,
-
                     currentBidderId:
                         gameState.currentBidderId,
-
                     bidHistory:
                         gameState.bidHistory,
-
                     phase:
                         gameState.phase,
-
                     winningBidderId:
                         gameState.winningBidderId,
-
                     winningBid:
                         gameState.winningBid,
+                    biddingTeam:
+                        gameState.biddingTeam,
+                    allHand:
+                        gameState.allHand,
                 }
             );
 
-            res.json(
-                gameState
-            );
+            return res.json(gameState);
         } catch (error: any) {
-            res.status(400).json({
+            return res.status(400).json({
                 message:
                     error.message,
             });

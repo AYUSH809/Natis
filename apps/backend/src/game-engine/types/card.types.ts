@@ -1,9 +1,20 @@
+export const STANDARD_SUITS = [
+    "SPADES",
+    "HEARTS",
+    "DIAMONDS",
+    "CLUBS",
+] as const;
+
+export const SUITS = [
+    ...STANDARD_SUITS,
+    "JOKER",
+] as const;
+
+export type StandardSuit =
+    (typeof STANDARD_SUITS)[number];
+
 export type Suit =
-    | "HEARTS"
-    | "DIAMONDS"
-    | "CLUBS"
-    | "SPADES"
-    | "JOKER";
+    (typeof SUITS)[number];
 
 export type Rank =
     | "A"
