@@ -116,10 +116,4 @@ export function finalizeBidding(
             gameState.highestBidderId;
     }
 
-    if (
-        gameState.allHand
-    ) {
-        gameState.allHandPlayerId =
-            gameState.highestBidderId;
-    }
 }

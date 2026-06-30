@@ -110,4 +110,15 @@ export class RoomService {
 
         return room;
     }
+
+    static async saveRoom(
+        room: RoomState
+    ) {
+        await RoomStateService.saveRoomState(
+            room.roomCode,
+            room
+        );
+
+        return room;
+    }
 }

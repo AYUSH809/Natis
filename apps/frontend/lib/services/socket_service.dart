@@ -52,6 +52,10 @@ class SocketService {
     socket.on('suit_selected', callback);
   }
 
+  void onMatchEnded(Function(dynamic) callback) {
+    socket.on('match_ended', callback);
+  }
+
   void dispose() {
     socket.dispose();
   }

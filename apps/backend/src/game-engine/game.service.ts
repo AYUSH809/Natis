@@ -35,6 +35,14 @@ export class GameService {
             );
         }
 
+        console.log("ROOM =", room);
+
+        console.log("room.maxPlayers =", room.maxPlayers);
+        console.log("typeof room.maxPlayers =", typeof room.maxPlayers);
+
+        console.log("MAX_PLAYERS =", MAX_PLAYERS);
+        console.log("typeof MAX_PLAYERS =", typeof MAX_PLAYERS);
+
         if (
             room.maxPlayers !==
             MAX_PLAYERS
@@ -84,6 +92,7 @@ export class GameService {
                 players,
                 deck
             );
+        console.log("STEP 1: Initial deal completed");
 
         const gameState: GameState = {
             roomCode,
@@ -130,20 +139,35 @@ export class GameService {
             bidHistory: [],
         };
 
+        console.log("STEP 2: GameState created");
+
         room.matchStarted = true;
 
         await RoomService.saveRoom(
             room
         );
+
+        console.log("STEP 3: Room saved");
+
         await GameStateService.saveGameState(
             roomCode,
             gameState
         );
 
+        console.log("STEP 4: GameState saved");
+
+        console.log("STEP 5: Emitting match_started");
+
         for (const player of room.players) {
             if (!player.socketId) {
                 continue;
             }
+
+            console.log(
+                "Sending to:",
+                player.username,
+                player.socketId
+            );
 
             io.to(player.socketId).emit(
                 "match_started",
@@ -154,10 +178,14 @@ export class GameService {
             );
         }
 
+        console.log("STEP 6: All emits completed");
+
         io.to(roomCode).emit(
             "room_updated",
             room
         );
+
+        console.log("STEP 7: Returning");
 
         return gameState;
     }

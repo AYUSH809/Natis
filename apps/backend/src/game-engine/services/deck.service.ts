@@ -3,10 +3,7 @@ import {
     STANDARD_SUITS,
 } from "../types/card.types";
 
-import {
-    MAX_PLAYERS,
-    TOTAL_TRICKS,
-} from "../utils/game-rules";
+import { MAX_PLAYERS, TOTAL_TRICKS } from "../utils/game-rules";
 
 export class DeckService {
     static generateDeck(
@@ -83,6 +80,16 @@ export class DeckService {
 
         const expectedCards =
             MAX_PLAYERS * TOTAL_TRICKS;
+
+        console.log("DECK SIZE =", deck.length);
+
+        console.log("EXPECTED =", expectedCards);
+
+        console.log(
+            deck.map(
+                card => `${card.rank}-${card.suit}`
+            )
+        );
 
         if (
             deck.length !== expectedCards

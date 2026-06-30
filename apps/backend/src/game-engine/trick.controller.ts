@@ -98,9 +98,15 @@ export class TrickController {
                         teammate.disabled =
                             true;
 
-                        gameState.disabledPlayerIds.push(
-                            teammate.userId
-                        );
+                        if (
+                            !gameState.disabledPlayerIds.includes(
+                                teammate.userId
+                            )
+                        ) {
+                            gameState.disabledPlayerIds.push(
+                                teammate.userId
+                            );
+                        }
                     }
                 }
             }

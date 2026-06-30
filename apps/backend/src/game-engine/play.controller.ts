@@ -120,7 +120,16 @@ export class PlayController {
       let trickWinnerId: string | undefined;
 
       // TRICK COMPLETE
-      if (gameState.tableCards.length === gameState.maxPlayers) {
+      const activePlayersCount =
+        gameState.players.filter(
+          (player: any) =>
+            !player.disabled
+        ).length;
+
+      if (
+        gameState.tableCards.length ===
+        activePlayersCount
+      ) {
         trickWinnerId = TrickWinnerEngine.determineWinner(
           gameState.tableCards,
           gameState.trumpSuit,
@@ -166,6 +175,29 @@ export class PlayController {
           gameState.matchEnded = true;
 
           ScoringEngine.calculateScore(gameState);
+
+          io.to(roomCode).emit(
+            "match_ended",
+            {
+              score:
+                gameState.score,
+
+              teamATricks:
+                gameState.teamATricks,
+
+              teamBTricks:
+                gameState.teamBTricks,
+
+              biddingTeam:
+                gameState.biddingTeam,
+
+              winningBid:
+                gameState.winningBid,
+
+              allHand:
+                gameState.allHand,
+            }
+          );
         }
       }
 

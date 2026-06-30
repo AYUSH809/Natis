@@ -2,8 +2,7 @@ export const STANDARD_SUITS = [
     "SPADES",
     "HEARTS",
     "DIAMONDS",
-    "CLUBS",
-    "JOKER",
+    "CLUBS"
 ] as const;
 
 export const SUITS = [

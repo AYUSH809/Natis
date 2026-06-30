@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'match_summary_screen.dart';
 
 import '../../../providers/socket_provider.dart';
 
@@ -69,6 +70,18 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
           gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
         });
+      });
+
+      socketService.onMatchEnded((data) {
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                MatchSummaryScreen(summary: Map<String, dynamic>.from(data)),
+          ),
+        );
       });
 
       socketService.onCardPlayed((data) {
