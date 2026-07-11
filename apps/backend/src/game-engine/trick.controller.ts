@@ -119,21 +119,15 @@ export class TrickController {
                 gameState
             );
 
-            io.to(roomCode).emit(
-                "suit_selected",
-                {
-                    suit,
-
-                    trumpSuit:
-                        gameState.trumpSuit,
-
-                    phase:
-                        gameState.phase,
-
-                    currentPlayerTurn:
-                        gameState.currentPlayerTurn,
-                }
-            );
+            for (const player of gameState.players) {
+    io.to(player.socketId).emit(
+        "suit_selected",
+        GamePayloadService.buildPlayerState(
+            gameState,
+            player.userId
+        )
+    );
+}
 
             return res.json(
                 gameState

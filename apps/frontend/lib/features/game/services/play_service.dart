@@ -21,7 +21,7 @@ class PlayService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception(response.body);
+      throw Exception(jsonDecode(response.body)['message']);
     }
   }
 }

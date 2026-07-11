@@ -58,14 +58,14 @@ class _RoomWaitingScreenState extends ConsumerState<RoomWaitingScreen> {
       ).showSnackBar(SnackBar(content: Text(error['message'] ?? 'Room Error')));
     });
 
-    socketService.onMatchStarted((gameState) {
+    socketService.onMatchStarted((_) {
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) =>
-              GameScreen(gameState: Map<String, dynamic>.from(gameState)),
+              GameScreen(roomCode: room['roomCode'], userId: widget.userId),
         ),
       );
     });

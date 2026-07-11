@@ -15,15 +15,22 @@ export type BidValue =
     | 7
     | 8
     | 9;
-
 export interface PlayerHand {
-    userId: string;
-    username: string;
-    team: Team;
-    cards: Card[];
-    roundsWon: number;
-    disabled?: boolean;
-    disconnected?: boolean;
+    userId:string;
+
+    username:string;
+
+    socketId:string;
+
+    team:"A"|"B";
+
+    cards:Card[];
+
+    roundsWon:number;
+
+    disabled:boolean;
+
+    disconnected:boolean;
 }
 
 export interface BidState {

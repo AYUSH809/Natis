@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'match_summary_screen.dart';
 
 import '../../../providers/socket_provider.dart';
 
@@ -8,559 +7,228 @@ import '../services/bid_service.dart';
 import '../services/pass_service.dart';
 import '../services/play_service.dart';
 
-import '../widgets/card_widget.dart';
-import '../widgets/card_back_widget.dart';
+import '../widgets/bidding_panel.dart';
+import '../widgets/hand_widget.dart';
+import '../widgets/match_overlay.dart';
+import '../widgets/scoreboard_widget.dart';
+import '../widgets/table_widget.dart';
+import '../widgets/turn_indicator.dart';
+
+import 'match_summary_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
-  final Map<String, dynamic> gameState;
+  final String roomCode;
 
-  const GameScreen({super.key, required this.gameState});
+  final String userId;
+
+  const GameScreen({super.key, required this.roomCode, required this.userId});
 
   @override
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends ConsumerState<GameScreen> {
-  late Map<String, dynamic> gameState;
+  // ================================
+  // SERVICES
+  // ================================
 
-  final BidService bidService = BidService();
-  final PassService passService = PassService();
-  final PlayService playService = PlayService();
+  final BidService _bidService = BidService();
+
+  final PassService _passService = PassService();
+
+  final PlayService _playService = PlayService();
+
+  // ================================
+  // SOCKET
+  // ================================
+
+  dynamic _socket;
+
+  // ================================
+  // GAME STATE
+  // ================================
+
+  Map<String, dynamic> _gameState = {};
+
+  // ================================
+  // PLAYER DATA
+  // ================================
+
+  List<Map<String, dynamic>> _players = [];
+
+  List<Map<String, dynamic>> _myCards = [];
+
+  List<Map<String, dynamic>> _tableCards = [];
+
+  // ================================
+  // MATCH STATE
+  // ================================
+
+  String? _latestTrickWinner;
+
+  bool _matchEnded = false;
+
+  bool _loading = false;
+
+  bool _connected = false;
+
+  // ================================
+  // COMPUTED GETTERS
+  // ================================
+
+  bool get isMyTurn => _gameState["currentPlayerTurn"] == widget.userId;
+
+  bool get isDisabled =>
+      _gameState["disabledPlayerIds"] != null &&
+      (_gameState["disabledPlayerIds"] as List).contains(widget.userId);
+
+  int get teamAScore => _gameState["score"]?["teamA"] ?? 0;
+
+  int get teamBScore => _gameState["score"]?["teamB"] ?? 0;
+
+  int get teamATricks => _gameState["teamATricks"] ?? 0;
+
+  int get teamBTricks => _gameState["teamBTricks"] ?? 0;
+
+  String? get trumpSuit => _gameState["trumpSuit"];
+
+  int get currentRound => _gameState["currentRound"] ?? 1;
+
+  int get currentDealerIndex => _gameState["currentDealerIndex"] ?? 0;
+
+  String? get currentPlayerTurn => _gameState["currentPlayerTurn"];
+
+  String? get winningBidderId => _gameState["winningBidderId"];
+
+  bool get matchStarted => _gameState["matchStarted"] ?? false;
+
+  String getUsername(String? userId) {
+    if (userId == null) {
+      return "";
+    }
+
+    final player = _players.firstWhere(
+      (player) => player["userId"] == userId,
+      orElse: () => {},
+    );
+
+    return player["username"] ?? "";
+  }
 
   @override
   void initState() {
     super.initState();
 
-    gameState = Map<String, dynamic>.from(widget.gameState);
-    gameState['score'] ??= {'teamA': 0, 'teamB': 0};
-    gameState['teamATricks'] ??= 0;
-    gameState['teamBTricks'] ??= 0;
-    gameState['matchEnded'] ??= false;
+    _initializeGame();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final socketService = ref.read(socketProvider);
+  Future<void> _initializeGame() async {
+    _socket = ref.read(socketProvider);
 
-      socketService.onBidUpdated((data) {
-        if (!mounted) return;
+    _registerSocketListeners();
 
-        setState(() {
-          gameState['highestBid'] = data['highestBid'];
+    _connected = true;
+  }
 
-          gameState['highestBidderId'] = data['highestBidderId'];
+  void _registerSocketListeners() {
+    _socket.on("match_started", _onMatchStarted);
+    _socket.on("bid_updated", _onBidUpdated);
+    _socket.on("suit_selected", _onSuitSelected);
+    _socket.on("card_played", _onCardPlayed);
+    _socket.on("match_ended", _onMatchEnded);
+    _socket.on("player_disconnected", _onPlayerDisconnected);
+    _socket.on("player_reconnected", _onPlayerReconnected);
+  }
 
-          gameState['currentBidderId'] = data['currentBidderId'];
+  void _onMatchStarted(dynamic data) {
+    final gameData = Map<String, dynamic>.from(data);
 
-          gameState['bidHistory'] = data['bidHistory'];
+    _safeSetState(() {
+      _refreshGameState(gameData);
 
-          gameState['phase'] = data['phase'];
+      _matchEnded = false;
 
-          gameState['winningBidderId'] = data['winningBidderId'];
-
-          gameState['winningBid'] = data['winningBid'];
-        });
-      });
-
-      socketService.onSuitSelected((data) {
-        if (!mounted) return;
-
-        setState(() {
-          gameState['trumpSuit'] = data['trumpSuit'];
-
-          gameState['phase'] = data['phase'];
-
-          gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
-        });
-      });
-
-      socketService.onMatchEnded((data) {
-        if (!mounted) return;
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                MatchSummaryScreen(summary: Map<String, dynamic>.from(data)),
-          ),
-        );
-      });
-
-      socketService.onCardPlayed((data) {
-        if (!mounted) return;
-
-        setState(() {
-          gameState['tableCards'] = data['tableCards'];
-          gameState['currentPlayerTurn'] = data['currentPlayerTurn'];
-          gameState['score'] = data['score'] ?? gameState['score'];
-          gameState['teamATricks'] =
-              data['teamATricks'] ?? gameState['teamATricks'];
-          gameState['teamBTricks'] =
-              data['teamBTricks'] ?? gameState['teamBTricks'];
-          gameState['matchEnded'] = data['matchEnded'] ?? false;
-          gameState['currentRound'] = data['currentRound'];
-          gameState['rounds'] = data['rounds'];
-          gameState['trickWinnerId'] = data['trickWinnerId'];
-
-          if (data['playerId'] == gameState['playerId']) {
-            final cards = List<Map<String, dynamic>>.from(gameState['myHand']);
-
-            cards.removeWhere((card) => card['id'] == data['card']['id']);
-
-            gameState['myHand'] = cards;
-          }
-        });
-      });
+      _latestTrickWinner = null;
     });
   }
 
-  int get teamAScore => (gameState['score']?['teamA'] as num?)?.toInt() ?? 0;
+  void _onBidUpdated(dynamic data) {
+    debugPrint("[SOCKET] bid_updated");
 
-  int get teamBScore => (gameState['score']?['teamB'] as num?)?.toInt() ?? 0;
+    final gameData = Map<String, dynamic>.from(data);
 
-  int get teamATricks => (gameState['teamATricks'] as num?)?.toInt() ?? 0;
-
-  int get teamBTricks => (gameState['teamBTricks'] as num?)?.toInt() ?? 0;
-
-  String get matchResultText {
-    if (teamAScore > teamBScore) {
-      return 'Team A Wins';
-    }
-
-    if (teamBScore > teamAScore) {
-      return 'Team B Wins';
-    }
-
-    return 'Draw';
+    _safeSetState(() {
+      _refreshGameState(gameData);
+    });
   }
 
-  Widget buildScoreboardCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'SCOREBOARD',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Team A: $teamAScore',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            'Team B: $teamBScore',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Tricks: A = $teamATricks  B = $teamBTricks',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+  void _onSuitSelected(dynamic data) {
+    debugPrint("[SOCKET] suit_selected");
+
+    final gameData = Map<String, dynamic>.from(data);
+
+    _safeSetState(() {
+      _refreshGameState(gameData);
+    });
+  }
+
+  void _onCardPlayed(dynamic data) {}
+
+  void _onMatchEnded(dynamic data) {}
+
+  void _onPlayerDisconnected(dynamic data) {}
+
+  void _onPlayerReconnected(dynamic data) {}
+
+  @override
+  void dispose() {
+    _socket.off("match_started");
+    _socket.off("bid_updated");
+    _socket.off("suit_selected");
+    _socket.off("card_played");
+    _socket.off("match_ended");
+    _socket.off("player_disconnected");
+    _socket.off("player_reconnected");
+
+    super.dispose();
+  }
+
+  void _safeSetState(VoidCallback fn) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(fn);
+  }
+
+  void _updateGameState(Map<String, dynamic> data) {
+    _gameState = data;
+  }
+
+  void _extractCollections() {
+    _players = List<Map<String, dynamic>>.from(_gameState["players"] ?? []);
+
+    _myCards = List<Map<String, dynamic>>.from(_gameState["myHand"] ?? []);
+
+    _tableCards = List<Map<String, dynamic>>.from(
+      _gameState["tableCards"] ?? [],
     );
   }
 
-  Widget buildMatchFinishedOverlay() {
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black54,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          width: 320,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF123524),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'MATCH FINISHED',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Team A Score: $teamAScore',
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              Text(
-                'Team B Score: $teamBScore',
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                matchResultText,
-                style: const TextStyle(
-                  color: Colors.amber,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  void _refreshGameState(Map<String, dynamic> data) {
+    debugPrint("[STATE] Refreshing Game State");
 
-  Future<void> submitBid(int bid) async {
-    try {
-      await bidService.placeBid(
-        roomCode: gameState['roomCode'],
-        playerId: gameState['playerId'],
-        bid: bid,
-      );
-    } catch (error) {
-      if (!mounted) return;
+    _updateGameState(data);
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-    }
-  }
+    _extractCollections();
 
-  Future<void> submitPass() async {
-    try {
-      await passService.passBid(
-        roomCode: gameState['roomCode'],
-        playerId: gameState['playerId'],
-      );
-    } catch (error) {
-      if (!mounted) return;
+    _matchEnded = _gameState["matchEnded"] ?? false;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-    }
-  }
-
-  Future<void> playCard(String cardId) async {
-    try {
-      await playService.playCard(
-        roomCode: gameState['roomCode'],
-
-        playerId: gameState['playerId'],
-
-        cardId: cardId,
-      );
-    } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-    }
+    _latestTrickWinner = _gameState["trickWinnerId"];
   }
 
   @override
   Widget build(BuildContext context) {
-    final myCards = List<Map<String, dynamic>>.from(gameState['myHand'] ?? []);
-
-    final players = List<Map<String, dynamic>>.from(gameState['players'] ?? []);
-
-    final disabledPlayers = List<String>.from(
-      gameState['disabledPlayerIds'] ?? [],
-    );
-
-    final myPlayerId = gameState['playerId'];
-
-    final isDisabled = disabledPlayers.contains(myPlayerId);
-
-    final currentBidderId = gameState['currentBidderId'];
-
-    final isMyTurn = myPlayerId == currentBidderId;
-
-    return Scaffold(
-      backgroundColor: Colors.green[800],
-
-      appBar: AppBar(title: const Text('Natis')),
-
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              const SizedBox(height: 20),
-
-              Text(
-                'Players (${players.length})',
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CardBackWidget(),
-                  CardBackWidget(),
-                  CardBackWidget(),
-                  CardBackWidget(),
-                  CardBackWidget(),
-                ],
-              ),
-
-              Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'Player Left',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          CardBackWidget(),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: buildScoreboardCard(),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          const Text(
-                            'TABLE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          if (gameState['tableCards'] != null)
-                            Wrap(
-                              spacing: 10,
-                              children:
-                                  List<Map<String, dynamic>>.from(
-                                    gameState['tableCards'],
-                                  ).map((entry) {
-                                    return CardWidget(card: entry['card']);
-                                  }).toList(),
-                            ),
-
-                          Text(
-                            gameState['phase']?.toString() ?? 'BIDDING',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Text(
-                            'Current Bidder: ${gameState['currentBidderId'] ?? '-'}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-
-                          Text(
-                            'Me: $myPlayerId',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-
-                          Text(
-                            'Highest Bid: ${gameState['highestBid'] ?? 0}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          if (gameState['phase'] == 'TRICK_SELECTION')
-                            Text(
-                              'Winner: ${gameState['winningBidderId']}',
-                              style: const TextStyle(
-                                color: Colors.yellow,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-
-                          if (gameState['phase'] == 'TRICK_SELECTION')
-                            Text(
-                              'Winning Bid: ${gameState['winningBid']}',
-                              style: const TextStyle(
-                                color: Colors.yellow,
-                                fontSize: 18,
-                              ),
-                            ),
-
-                          Text(
-                            isMyTurn ? 'YOUR TURN' : 'WAITING...',
-                            style: TextStyle(
-                              color: isMyTurn ? Colors.yellow : Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-
-                          if (isDisabled)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Text(
-                                'ALL HAND ACTIVE\nYou are disabled.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-
-                          const SizedBox(height: 20),
-
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            alignment: WrapAlignment.center,
-                            children: [
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? submitPass
-                                    : null,
-                                child: const Text('Pass'),
-                              ),
-
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? () => submitBid(5)
-                                    : null,
-                                child: const Text('5'),
-                              ),
-
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? () => submitBid(6)
-                                    : null,
-                                child: const Text('6'),
-                              ),
-
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? () => submitBid(7)
-                                    : null,
-                                child: const Text('7'),
-                              ),
-
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? () => submitBid(8)
-                                    : null,
-                                child: const Text('8'),
-                              ),
-
-                              ElevatedButton(
-                                onPressed: isMyTurn && !isDisabled
-                                    ? () => submitBid(9)
-                                    : null,
-                                child: const Text('All Hand'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'Player Right',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          CardBackWidget(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(color: Colors.white),
-
-              const Text(
-                'YOUR HAND',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              SizedBox(
-                height: 120,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: myCards.length,
-                  itemBuilder: (_, index) {
-                    return GestureDetector(
-                      onTap: () {
-                        playCard(myCards[index]['id']);
-                      },
-                      child: CardWidget(card: myCards[index]),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-
-          if (gameState['matchEnded'] == true) buildMatchFinishedOverlay(),
-        ],
-      ),
-    );
+    return const Scaffold(body: Center(child: Text("Game Screen")));
   }
 }
