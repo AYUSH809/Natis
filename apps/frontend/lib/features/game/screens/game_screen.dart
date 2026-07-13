@@ -14,8 +14,6 @@ import '../widgets/scoreboard_widget.dart';
 import '../widgets/table_widget.dart';
 import '../widgets/turn_indicator.dart';
 
-import 'match_summary_screen.dart';
-
 class GameScreen extends ConsumerStatefulWidget {
   final String roomCode;
 
@@ -102,6 +100,28 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   bool get matchStarted => _gameState["matchStarted"] ?? false;
 
+  String get phase => _gameState["phase"] ?? "WAITING";
+
+  bool get isWaiting => phase == "WAITING";
+
+  bool get isBidding => phase == "BIDDING";
+
+  bool get isSuitSelection => phase == "SUIT_SELECTION";
+
+  bool get isPlaying => phase == "PLAYING";
+
+  bool get isMatchFinished => _matchEnded;
+
+  String get winningTeam {
+    if (teamAScore > teamBScore) {
+      return "A";
+    }
+    if (teamBScore > teamAScore) {
+      return "B";
+    }
+    return "DRAW";
+  }
+
   String getUsername(String? userId) {
     if (userId == null) {
       return "";
@@ -118,7 +138,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   void initState() {
     super.initState();
-
     _initializeGame();
   }
 
@@ -127,58 +146,120 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     _registerSocketListeners();
 
-    _connected = true;
+    _safeSetState(() {
+      _connected = true;
+    });
   }
 
   void _registerSocketListeners() {
-    _socket.on("match_started", _onMatchStarted);
-    _socket.on("bid_updated", _onBidUpdated);
-    _socket.on("suit_selected", _onSuitSelected);
-    _socket.on("card_played", _onCardPlayed);
-    _socket.on("match_ended", _onMatchEnded);
-    _socket.on("player_disconnected", _onPlayerDisconnected);
-    _socket.on("player_reconnected", _onPlayerReconnected);
+    _socket.onMatchStarted("match_started", _onMatchStarted);
+    _socket.on((_) {
+      _safeSetState(() {
+        _connected = true;
+      });
+    });
+
+    _socket.on((_) {
+      _safeSetState(() {
+        _connected = false;
+      });
+    });
+    _socket.onBidUpdated("bid_updated", _onBidUpdated);
+    _socket.onSuitSelected("suit_selected", _onSuitSelected);
+    _socket.onCardPlayed("card_played", _onCardPlayed);
+    _socket.onMatchEnded("match_ended", _onMatchEnded);
+    _socket.onPlayerDisconnected("player_disconnected", _onPlayerDisconnected);
+    _socket.onPlayerReconnected("player_reconnected", _onPlayerReconnected);
   }
 
   void _onMatchStarted(dynamic data) {
-    final gameData = Map<String, dynamic>.from(data);
+    debugPrint("========== MATCH START ==========");
+    debugPrint(data.toString());
 
     _safeSetState(() {
-      _refreshGameState(gameData);
+      _refreshGameState(_payload(data));
 
       _matchEnded = false;
-
       _latestTrickWinner = null;
     });
   }
 
   void _onBidUpdated(dynamic data) {
     debugPrint("[SOCKET] bid_updated");
-
-    final gameData = Map<String, dynamic>.from(data);
-
     _safeSetState(() {
-      _refreshGameState(gameData);
+      _refreshGameState(_payload(data));
     });
   }
 
   void _onSuitSelected(dynamic data) {
     debugPrint("[SOCKET] suit_selected");
-
-    final gameData = Map<String, dynamic>.from(data);
-
     _safeSetState(() {
-      _refreshGameState(gameData);
+      _refreshGameState(_payload(data));
     });
   }
 
-  void _onCardPlayed(dynamic data) {}
+  void _onCardPlayed(dynamic data) {
+    debugPrint("[SOCKET] card_played");
+    _safeSetState(() {
+      _refreshGameState(_payload(data));
+    });
+  }
 
-  void _onMatchEnded(dynamic data) {}
+  void _onMatchEnded(dynamic data) {
+    debugPrint("[SOCKET] match_ended");
+    _safeSetState(() {
+      _refreshGameState(_payload(data));
+      _matchEnded = true;
+      debugPrint("[MATCH] Team A: $teamAScore");
+      debugPrint("[MATCH] Team B: $teamBScore");
+    });
+  }
 
   void _onPlayerDisconnected(dynamic data) {}
-
   void _onPlayerReconnected(dynamic data) {}
+
+  Future<void> submitBid(int bid) async {
+    try {
+      await _bidService.placeBid(
+        roomCode: widget.roomCode,
+        playerId: widget.userId,
+        bid: bid,
+      );
+    } catch (e) {
+      debugPrint("[API] submitBid: $e");
+    }
+  }
+
+  Future<void> submitPass() async {
+    try {
+      await _passService.passBid(
+        roomCode: widget.roomCode,
+        playerId: widget.userId,
+      );
+    } catch (e) {
+      debugPrint("[API] submitPass: $e");
+    }
+  }
+
+  Future<void> playCard(String cardId) async {
+    try {
+      await _playService.playCard(
+        roomCode: widget.roomCode,
+        playerId: widget.userId,
+        cardId: cardId,
+      );
+    } catch (e) {
+      debugPrint("[API] playCard: $e");
+    }
+  }
+
+  Future<void> selectSuit(String suit) async {
+    debugPrint("[API] selectSuit: $suit");
+  }
+
+  void leaveMatch() {
+    Navigator.pop(context);
+  }
 
   @override
   void dispose() {
@@ -216,19 +297,181 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   void _refreshGameState(Map<String, dynamic> data) {
-    debugPrint("[STATE] Refreshing Game State");
+    debugPrint("========== REFRESH ==========");
+    debugPrint(data.toString());
 
     _updateGameState(data);
 
     _extractCollections();
 
-    _matchEnded = _gameState["matchEnded"] ?? false;
+    _matchEnded = _gameState["matchEnded"] == true;
 
     _latestTrickWinner = _gameState["trickWinnerId"];
+
+    debugPrint("PHASE = ${_gameState["phase"]}");
+  }
+
+  Map<String, dynamic> _payload(dynamic data) {
+    return Map<String, dynamic>.from(data);
+  }
+
+  Widget _buildScoreboard() {
+    return ScoreboardWidget(
+      teamAScore: teamAScore,
+      teamBScore: teamBScore,
+      teamATricks: teamATricks,
+      teamBTricks: teamBTricks,
+      currentRound: currentRound,
+      phase: phase,
+      currentTurn: getUsername(currentPlayerTurn),
+      highestBid: _gameState["highestBid"],
+    );
+  }
+
+  Widget _buildTurnIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TurnIndicator(
+        isMyTurn: isMyTurn,
+        isDisabled: isDisabled,
+        playerName: getUsername(currentPlayerTurn),
+      ),
+    );
+  }
+
+  Widget _buildTable() {
+    return TableWidget(
+      players: _players,
+      tableCards: _tableCards,
+      trumpSuit: trumpSuit,
+      latestTrickWinner: _latestTrickWinner,
+      currentRound: currentRound,
+      currentDealerIndex: currentDealerIndex,
+      currentPlayerTurn: currentPlayerTurn,
+      winningBidderId: winningBidderId,
+    );
+  }
+
+  Widget _buildBiddingPanel() {
+    if (!isBidding) {
+      return const SizedBox.shrink();
+    }
+
+    return BiddingPanel(
+      isMyTurn: isMyTurn,
+      enabled: !isDisabled,
+      highestBid: _gameState["highestBid"],
+      onBid: submitBid,
+      onPass: submitPass,
+    );
+  }
+
+  Widget _buildHand() {
+    if (!isPlaying) {
+      return const SizedBox.shrink();
+    }
+
+    return HandWidget(
+      cards: _myCards,
+
+      enabled: isMyTurn,
+
+      isDisabled: isDisabled,
+
+      selectedCardId: null,
+
+      onCardSelected: (card) {
+        playCard(card["id"]);
+      },
+    );
+  }
+
+  Widget _buildOverlay() {
+    return MatchOverlay(
+      visible: isMatchFinished,
+      teamAScore: teamAScore,
+      teamBScore: teamBScore,
+      teamATricks: teamATricks,
+      teamBTricks: teamBTricks,
+      trumpSuit: trumpSuit,
+      winningBid: _gameState["highestBid"] ?? 0,
+      onPlayAgain: () {
+        debugPrint("Play Again");
+      },
+      onExitLobby: leaveMatch,
+    );
+  }
+
+  Widget _buildLoadingOverlay() {
+    if (!_loading) {
+      return const SizedBox.shrink();
+    }
+
+    return const Positioned.fill(
+      child: ColoredBox(
+        color: Color(0x88000000),
+
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget _buildConnectionBanner() {
+    if (_connected) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      top: 12,
+      left: 12,
+      right: 12,
+      child: Material(
+        color: Colors.red,
+
+        borderRadius: BorderRadius.circular(12),
+
+        child: const Padding(
+          padding: EdgeInsets.all(12),
+
+          child: Text(
+            "Reconnecting...",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomPanel() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [_buildBiddingPanel(), _buildHand()],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text("Game Screen")));
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B1020),
+
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _buildScoreboard(),
+                _buildTurnIndicator(),
+                Expanded(child: _buildTable()),
+                _buildBottomPanel(),
+              ],
+            ),
+            _buildOverlay(),
+            _buildLoadingOverlay(),
+            _buildConnectionBanner(),
+          ],
+        ),
+      ),
+    );
   }
 }

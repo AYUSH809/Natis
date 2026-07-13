@@ -7,6 +7,7 @@ import { io } from "../socket/socket.server";
 import { TrickWinnerEngine } from "./engines/trick-winner.engine";
 
 import { ScoringEngine } from "./engines/scoring.engine";
+import { GamePayloadService } from "./services/game-payload.service";
 
 export class PlayController {
   static async playCard(req: Request, res: Response) {
@@ -176,57 +177,29 @@ export class PlayController {
 
           ScoringEngine.calculateScore(gameState);
 
-          io.to(roomCode).emit(
-            "match_ended",
-            {
-              score:
-                gameState.score,
-
-              teamATricks:
-                gameState.teamATricks,
-
-              teamBTricks:
-                gameState.teamBTricks,
-
-              biddingTeam:
-                gameState.biddingTeam,
-
-              winningBid:
-                gameState.winningBid,
-
-              allHand:
-                gameState.allHand,
-            }
-          );
+          for (const player of gameState.players) {
+            io.to(player.socketId).emit(
+              "match_ended",
+              GamePayloadService.buildPlayerState(
+                gameState,
+                player.userId,
+              ),
+            );
+          }
         }
       }
 
       await GameStateService.saveGameState(roomCode, gameState);
 
-      io.to(roomCode).emit("card_played", {
-        playerId,
-
-        card: playedCard,
-
-        tableCards: gameState.tableCards,
-
-        currentPlayerTurn: gameState.currentPlayerTurn,
-
-        score: gameState.score,
-
-        teamATricks: gameState.teamATricks,
-
-        teamBTricks: gameState.teamBTricks,
-
-        matchEnded: gameState.matchEnded,
-
-        trickWinnerId,
-
-        currentRound: gameState.currentRound,
-
-        rounds: gameState.rounds,
-      });
-
+      for (const player of gameState.players) {
+        io.to(player.socketId).emit(
+          "card_played",
+          GamePayloadService.buildPlayerState(
+            gameState,
+            player.userId,
+          ),
+        );
+      }
       return res.json({
         success: true,
         card: playedCard,

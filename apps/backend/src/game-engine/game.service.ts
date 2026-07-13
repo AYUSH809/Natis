@@ -74,13 +74,10 @@ export class GameService {
         const players: PlayerHand[] =
             room.players.map(
                 (player: RoomPlayer) => ({
-                    userId:
-                        player.userId,
-                    username:
-                        player.username,
-                    team:
-                        player.team!,
-                    cards: [],
+                    userId: player.userId,
+                    username: player.username,
+                    socketId: player.socketId,
+                    team: player.team, cards: [],
                     roundsWon: 0,
                     disabled: false,
                     disconnected: false,
@@ -92,7 +89,6 @@ export class GameService {
                 players,
                 deck
             );
-        console.log("STEP 1: Initial deal completed");
 
         const gameState: GameState = {
             roomCode,
@@ -139,42 +135,28 @@ export class GameService {
             bidHistory: [],
         };
 
-        console.log("STEP 2: GameState created");
-
         room.matchStarted = true;
 
         await RoomService.saveRoom(
             room
         );
 
-        console.log("STEP 3: Room saved");
-
         await GameStateService.saveGameState(
             roomCode,
             gameState
         );
 
-        console.log("STEP 4: GameState saved");
-
-        console.log("STEP 5: Emitting match_started");
-
-        for (const player of room.players) {
+        for (const player of gameState.players) {
             if (!player.socketId) {
                 continue;
             }
-
-            console.log(
-                "Sending to:",
-                player.username,
-                player.socketId
-            );
 
             io.to(player.socketId).emit(
                 "match_started",
                 GamePayloadService.buildPlayerState(
                     gameState,
-                    player.userId
-                )
+                    player.userId,
+                ),
             );
         }
 

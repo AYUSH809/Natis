@@ -22,25 +22,18 @@ export class GamePayloadService {
                 gameState.roomCode,
             playerId,
             myHand: player.cards,
-            players:
-                gameState.players.map(
-                    (entry) => ({
-                        userId:
-                            entry.userId,
-                        username:
-                            entry.username,
-                        team:
-                            entry.team,
-                        roundsWon:
-                            entry.roundsWon,
-                        disabled:
-                            entry.disabled ??
-                            false,
-                        disconnected:
-                            entry.disconnected ??
-                            false,
-                    })
-                ),
+            players: gameState.players.map(
+                (entry) => ({
+                    userId: entry.userId,
+                    username: entry.username,
+                    team: entry.team,
+                    roundsWon: entry.roundsWon,
+                    cardsRemaining: entry.cards.length,
+                    disabled: entry.disabled ?? false,
+                    disconnected: entry.disconnected ?? false,
+                })
+            ),
+
             maxPlayers:
                 gameState.maxPlayers,
             phase:

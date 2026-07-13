@@ -5,6 +5,7 @@ import { GameStateService } from "../redis/game-state.service";
 import { io } from "../socket/socket.server";
 
 import { FinalDealService } from "./services/final-deal.service";
+import { GamePayloadService } from "./services/game-payload.service";
 
 export class TrickController {
     static async selectSuit(
@@ -120,15 +121,15 @@ export class TrickController {
             );
 
             for (const player of gameState.players) {
-    io.to(player.socketId).emit(
-        "suit_selected",
-        GamePayloadService.buildPlayerState(
-            gameState,
-            player.userId
-        )
-    );
-}
-
+                io.to(player.socketId).emit(
+                    "suit_selected",
+                    GamePayloadService.buildPlayerState(
+                        gameState,
+                        player.userId,
+                    ),
+                );
+            }
+            
             return res.json(
                 gameState
             );

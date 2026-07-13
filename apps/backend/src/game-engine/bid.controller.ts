@@ -4,6 +4,7 @@ import { GameStateService } from "../redis/game-state.service";
 import { io } from "../socket/socket.server";
 
 import { BiddingEngine } from "./engines/bidding.engine";
+import { GamePayloadService } from "./services/game-payload.service";
 
 export class BidController {
     static async placeBid(
@@ -19,9 +20,9 @@ export class BidController {
 
             if (
                 typeof roomCode !==
-                    "string" ||
+                "string" ||
                 typeof playerId !==
-                    "string" ||
+                "string" ||
                 typeof bid !== "number"
             ) {
                 throw new Error(
@@ -51,29 +52,23 @@ export class BidController {
                 gameState
             );
 
-            io.to(roomCode).emit(
-                "bid_updated",
-                {
-                    highestBid:
-                        gameState.highestBid,
-                    highestBidderId:
-                        gameState.highestBidderId,
-                    currentBidderId:
-                        gameState.currentBidderId,
-                    bidHistory:
-                        gameState.bidHistory,
-                    phase:
-                        gameState.phase,
-                    winningBidderId:
-                        gameState.winningBidderId,
-                    winningBid:
-                        gameState.winningBid,
-                    biddingTeam:
-                        gameState.biddingTeam,
-                    allHand:
-                        gameState.allHand,
-                }
-            );
+            for (const player of gameState.players) {
+
+                io.to(player.socketId).emit(
+
+                    "bid_updated",
+
+                    GamePayloadService.buildPlayerState(
+
+                        gameState,
+
+                        player.userId
+
+                    )
+
+                );
+
+            }
 
             return res.json(gameState);
         } catch (error: any) {
