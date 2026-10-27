@@ -1,0 +1,149 @@
+NATIS Official Rulebook (v1.0)
+
+1. Overview
+
+Natis is a multiplayer, team-based trick-taking card game designed for 4 or 6 players. The game revolves around team coordination, bidding, a hidden Trick Suit mechanic, a Reveal system, Joker strategy, round prediction, and team scoring.
+
+2. Players
+
+Supported modes: 4 Players and 6 Players.4 Players: Team A – Players 1 & 3; Team B – Players 2 & 4.6 Players: Team A – Players 1, 3 & 5; Team B – Players 2, 4 & 6.
+
+3. Deck
+
+Standard deck consisting of Spades, Hearts, Clubs and Diamonds plus Jokers.
+
+4. Cards Used
+
+4 Player Match:• Hearts: A–7 (8 cards)• Clubs: A–7 (8 cards)• Diamonds: A–7 (8 cards)• Spades: A–8 (7 cards)• 1 JokerTotal Cards: 32 (8×3 + 7 + 1)Each player receives 8 cards.6 Player Match:• Hearts: A–3 (12 cards)• Clubs: A–3 (12 cards)• Diamonds: A–3 (12 cards)• Spades: A–4 (11 cards)• 1 JokerTotal Cards: 48 (12×3 + 11 + 1)Each player receives 8 cards.
+
+5. Card Ranking
+
+A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3 > 2.
+
+6. Match Flow
+
+Dealer Selection → Shuffle → Deal Cards → Trick Suit Selection → Bidding → Rounds → Scoring → Winner.
+
+7. Dealer
+
+The dealer rotates clockwise after every round. Bidding always starts with the player immediately next to the dealer in clockwise order.
+
+8. Trick Suit
+
+After dealing, one player chooses the hidden Trick Suit. Normally this is the highest bidder. If every other player passes during bidding, the dealer chooses the Trick Suit. Only the selecting player knows the Trick Suit until it is revealed.
+
+9. Bidding
+
+Players bid the number of tricks they expect to win. The highest bidder wins the contract and becomes the Contract Player.
+
+10. All Hand
+
+Up to the end of Round 3, a player may declare an All Hand. From that point onward, the declaring player must win every remaining round without assistance from teammates. Once declared, the teammates of that player are disabled for the remainder of the match. Successful completion earns a very high bonus; failure results in a very high penalty.
+
+11. Starting Player
+
+The first round starts with the player to the left of the dealer.
+
+12. Playing Cards
+
+Players play one card clockwise. The first card establishes the Base Suit.
+
+13. Base Suit Rule
+
+If a player has the Base Suit, they must follow it unless they choose to play the Joker. If a player does not have the Base Suit, they may play any other suit or the Joker.
+
+14. Winning a Round
+
+Before reveal, the highest Base Suit card wins. After reveal, the highest Trick Suit wins; if no Trick Suit is played, the highest Base Suit wins.
+
+15. Hidden Trick Suit
+
+Initially only the selecting player knows the Trick Suit. It remains hidden until revealed.
+
+16. Reveal Mechanic
+
+A player may reveal the Trick Suit according to the game rules. Once revealed, it remains visible for the rest of the match and cannot be hidden again.
+
+17. After Reveal
+
+The Trick Suit becomes the strongest suit for the remainder of the match.
+
+18. Joker Rules
+
+Only one Joker is used in a match. A Joker cannot be played as the opening card of a round. A player may play the Joker even if they have the Base Suit. If the player does not have the Base Suit, they may play either the Joker or any other suit.
+
+19. Joker Strength
+
+The single Joker defeats every normal card, including the Trick Suit.
+
+20. Trick Suit Cannot Be Joker
+
+If the Joker is selected during Trick Suit generation, no suit gains trump power. The Joker still remains the strongest card.
+
+21. Round End
+
+The trick winner collects the round and the round count increases.
+
+22. Match End
+
+The match ends after all cards have been played.
+
+23. Scoring
+
+The contract team must meet or exceed its bid to score positively. Failing the contract results in a penalty.
+
+24. Team Score
+
+Scoring is maintained only at the team level.
+
+25. Timer
+
+Each turn has a countdown. If time expires, the server automatically plays the lowest valid card.
+
+26. Auto Play
+
+The server validates moves and automatically plays the lowest legal card when required.
+
+27. Disconnection
+
+Disconnected players are auto-played until they reconnect, after which the complete game state is restored.
+
+28. Illegal Moves
+
+The server rejects invalid moves, duplicate plays, late plays and other illegal actions.
+
+29. Server Authority
+
+The server is the single source of truth for move validation, winners, scoring, timers and synchronization.
+
+30. Match History
+
+The last 10 completed matches are stored with teams, players, bids, scores, winners and timestamps.
+
+31. Rankings
+
+There are no rankings, XP or leaderboards in v1.0.
+
+32. Emojis
+
+Players may send preset emojis during a match.
+
+33. Voice Chat
+
+Players in the same room may communicate using voice chat during the match.
+
+34. Room Owner
+
+The room owner can start the match, invite players, remove players and configure the room.
+
+35. Victory
+
+The team with the highest final score wins the match.
+
+36. Future Features
+
+Tournament mode, Ranked play, Spectator mode, Replay system, Seasonal statistics and Achievements.
+
+Complete Gameplay Sequence
+
+Create Room → Players Join → Teams Assigned → Dealer Selected → Shuffle → Deal Cards → Hidden Trick Suit Chosen → Bidding → Contract Finalized → Rounds Begin → Base Suit Established → Cards Played → (Optional) Reveal Trick Suit → Round Winner → Repeat Until All Cards Finish → Calculate Team Scores → Determine Winner → Store Match History → Return to Lobby

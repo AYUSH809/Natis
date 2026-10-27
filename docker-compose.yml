@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: natis-backend
+    restart: unless-stopped
+    ports:
+      - "${NATIS_BACKEND_PORT:-4001}:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+    volumes:
+      - natis-db-data:/app/data
+    networks:
+      - natis-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: natis-frontend
+    restart: unless-stopped
+    ports:
+      - "${NATIS_FRONTEND_PORT:-3005}:80"
+    depends_on:
+      - backend
+    networks:
+      - natis-network
+
+volumes:
+  natis-db-data:
+    driver: local
+
+networks:
+  natis-network:
+    driver: bridge
